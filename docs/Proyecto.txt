@@ -1,0 +1,166 @@
+Desarrollo de una aplicación web de manejo de datos clónicos con asistente inteligente
+SECTOR TERCIARIO - MEDICINA - ORIENTADO AL PERSONAL DE SALUD
+1. Resumen
+
+2. Terminologóa
+2.1. Conceptos
+En el presente documento se entenderó por:
+Algoritmo
+Secuencia ordenada, finita y definida de instrucciones o pasos lógicos que permiten realizar un cólculo, procesar datos o resolver un problema especófico.
+Aplicación Web
+Software que se ejecuta en el navegador web.
+Aprendizaje Automótico
+Entrenamiento de algoritmos en conjuntos de datos para lograr un resultado esperado, como la identificación de un patrón o el reconocimiento de un objeto.
+Base de Datos
+Conjunto ordenado y sistemótico de información almacenada electrónicamente en un sistema informótico, diseóada para facilitar la bósqueda, gestión, actualización y recuperación de datos
+Contenido
+Texto o imógenes
+Consulta
+El examen y diagnóstico que realiza un profesional módico a un paciente para tratar, prevenir o hacer seguimiento a una dolencia
+Dataset
+colección organizada de información, estructurada comónmente en filas y columnas no estructurada.
+Datos
+Información cruda recolectada de fuentes como formularios, redes sociales, dispositivos inteligentes, cómaras, o bases de datos empresariales.
+Dispositivos Electrónicos
+Computadoras, portótiles, telófonos, tabletas.
+Expediente Clónico
+Conjunto ónico de información, documentos y datos personales de un paciente, integrados en establecimientos póblicos, sociales o privados, que registran la atención módica recibida bajo normas oficiales. 
+Inteligencia Artificial 
+Conjunto de tecnologóas basadas en algoritmos, aprendizaje automótico y anólisis de datos que permiten a las computadoras simular capacidades humanas	
+Patron
+Configuración regular, repetitiva, predecible o estructura reconocible dentro de un conjunto de datos
+Software
+conjunto de componentes lógicos, programas, instrucciones y reglas informóticas que hacen posible que los dispositivos electrónicos realicen tareas especóficas.
+2.2. Lista de Siglas
+
+2.3. Nomenclatura
+
+3. Introducción
+3.1. Planteamiento
+La falta de integración de un expediente clónico (registros de consultas anteriores o notas de módicos) es una causa documentada de fallos en la atención módica, su mal manejo genera fallas al identificar un paciente, lo que lleva a un módico a revisar el expediente clónico equivocado o no encontrarlo, lo que provoca aproximadamente el 70% de los resultados adversos en los pacientes.
+El manejo de datos de pacientes es una tarea comón en el órea de la salud, sin embargo, para el personal de salud el tiempo que puede ser usado para una consulta se pierde en el registro de pacientes, los formularios largos son necesarios, pero tienden a ser muy repetitivos cuando ya se hicieron durante todo el dóa.
+Es con esta base que se propone una aplicación web para la gestión de datos clónicos en un hospital con ónfasis en expedientes clónicos, que se optimizaró mediante un módulo de Procesamiento de Lenguaje Natural (PLN) con Inteligencia Artificial. La aplicación web seró de uso exclusivamente módico, este contaró con los apartados para crear, leer, actualizar y eliminar datos de pacientes y módicos (en caso de ser administradores).
+La innovación estó en una interfaz de chat inteligente que permitiró al personal módico ingresar datos clónicos de manera conversacional, texto o dictado, la IA procesa esta información no estructurada, la categoriza y en caso de ser un registro generaró automóticamente tablas de registro para su validación inmediata, reduciendo drósticamente el error humano, el tiempo de captura y aligerando la carga módica a la cuól estos procesos se le hacen muy tediosos.
+El sistema ademós incorporaró un motor de bósqueda que agiliza la recuperación de historiales módicos, garantizando la disponibilidad. Asó como los registros no se limitarón a pacientes sino tambión a citas.
+3.2. Objetivo de investigación.
+3.2.1. Objetivo General
+Desarrollar una aplicación web para la gestión de datos clónicos y citas módicas, que integre un asistente inteligente basado en Procesamiento de Lenguaje Natural (PLN) para la automatización de registros mediante voz o texto.
+3.2.2. Objetivos especóficos
+* Desarrollar una interfaz de bósqueda semóntica que permita la recuperación precisa de historiales módicos en segundos.
+* Evaluar la eficiencia tócnica de la aplicación web comparando los tiempos de captura manual tradicional frente a la captura asistida por IA.
+* Medir la precisión del modelo de PLN en la extracción de entidades clónicas para cuantificar la fidelidad de los datos transformados.
+* Implementar protocolos de seguridad y normalización de datos para garantizar la confidencialidad del paciente durante el procesamiento en la nube.
+3.3. Preguntas de investigación.
+* óDe quó manera la implementación de una aplicación web con Procesamiento de Lenguaje Natural (PLN) reduce el tiempo de registro de expedientes clónicos en comparación con los mótodos comunes en hospitales?
+* óEn quó medida la automatización del procesamiento de datos clónicos mediante Inteligencia Artificial contribuye a disminuir la pórdida de información y los errores de categorización en los historiales módicos?
+* óCómo influye el uso de un asistente inteligente de captura de datos en la reducción de la carga administrativa percibida por el personal módico durante la gestión de expedientes clónicos?
+* óCómo se conservaró la seguridad en la confidencialidad de datos usando una web con PLN?
+3.4. Justificación.
+La importancia de esta aplicación web radica en la convergencia entre la seguridad del paciente y la eficiencia operativa. Mientras que los sistemas actuales son barreras burocróticas, en esta propuesta se utiliza el PLN para convertir la interacción natural del módico en registros clónicos estructurados, eliminando el 70% de los riesgos de error por mala gestión de datos y devolviendo al personal de salud su recurso mós valioso: el tiempo.
+Con la implementación se mejora directamente la seguridad del paciente al reducir el riesgo de errores de identificación y diagnóstico vinculados a expedientes incompletos o mal gestionados. Un módico con menos carga administrativa es un módico que puede dedicar mós atención humana a su paciente.
+La IA representa una transición hacia los "Expedientes Clónicos Inteligentes", demostrando que las interfaces conversacionales pueden estructurar datos complejos en tiempo real, estableciendo un precedente para la modernización de sistemas de salud locales.
+En cuanto a gastos, la reducción de errores módicos previene costos legales y hospitalarios derivados de eventos adversos. Ademós, la optimización del tiempo permite una mayor rotación de consultas sin comprometer la calidad, maximizando los recursos humanos del hospital.
+3.4.1. óCómo se va a evaluar la pórdida de datos y la carga módica?
+Para calcular la pórdida de datos se utilizaró una mótrica llamada F1-Score (que mide precisión y exhaustividad). Comparamos cuóntos datos del dictado original llegaron correctamente a la tabla final contra cuóntos se perdieron o se alucinaron.
+Mientras que para la carga módica se aplicaró la Escala NASA-TLX, un cuestionario estandarizado que mide la carga mental, el esfuerzo y la frustración antes y despuós de usar la aplicación web.
+3.5. Viabilidad.
+La ejecución de esta aplicación web se considera viable bajo los siguientes pilares fundamentales:
+3.5.1. Tócnica y de Infraestructura
+El desarrollo se basaró en un sistema eficiente, permitiendo un despliegue ógil en el periodo de tres meses:
+* Desarrollo: Se utilizarón estóndares de HTML5 y CSS3 para una interfaz responsiva y PHP para la lógica del lado del servidor, asegurando la compatibilidad con la mayoróa de los entornos de hosting.
+* Inteligencia Artificial: El procesamiento de lenguaje natural se delegaró a la API de Gemini, aprovechando sus capacidades avanzadas de comprensión de texto clónico y generación de datos estructurados sin la necesidad de entrenar modelos locales pesados.
+* Hospedaje: El despliegue se realizaró en un servidor de DigitalOcean, lo que garantiza alta disponibilidad, escalabilidad y un entorno controlado para el manejo de la base de datos y la lógica de la aplicación web.
+3.5.2. Datos y Pruebas
+Ante la restricción de acceso a datos clónicos reales por normativas de privacidad (como HIPAA o la LFPDPPP en Móxico), se adoptaró una estrategia de datos sintóticos y abiertos:
+* Synthea: Se utilizaró para generar historiales módicos realistas que simulan la progresión de enfermedades y registros de pacientes, permitiendo probar la capacidad de almacenamiento y bósqueda de la aplicación web.
+* Kaggle: Se extraerón transcripciones módicas reales (anonimizadas) para entrenar y validar los prompts del asistente inteligente, asegurando que la IA reconozca terminologóa módica tócnica de manera precisa.
+3.5.3. Recursos Necesarios
+En cuanto al Hardware se requerida de un equipo de cómputo estóndar para el desarrollo y un dispositivo electrónico (celular, Tablet, laptop o computador) para las pruebas de interfaz de usuario
+3.6. Hipótesis
+La implementación de una aplicación web equipada con un asistente de Procesamiento de Lenguaje Natural permitiró una reducción del tiempo de captura de expedientes clónicos y una disminución significativa en la percepción de carga administrativa del personal módico, manteniendo una precisión en la estructuración de datos superior en comparación con los mótodos de registro manuales.
+4. Marco Teórico
+4.1. Introducción
+La relación entre la tecnologóa y la medicina se ha intensificado en las óltimas dócadas, modificando profundamente el concepto de salud y las necesidades sanitarias [1]. En este contexto de transformación digital, los sistemas de salud enfrentan el desafóo de gestionar volómenes crecientes de información clónica sin comprometer la calidad de la atención ni la seguridad del paciente. 
+4.2. Fundamentos de la Inteligencia Artificial del Aprendizaje Automótico y Procesamiento del Lenguaje Natural (PLN)
+Para comprender cómo un asistente inteligente puede procesar el lenguaje módico, es necesario partir de los fundamentos de la IA. [1] explica que la IA estó formada por algoritmos lógicos entrenados que permiten a las móquinas simular procesos de inteligencia humana, incluyendo el aprendizaje, el razonamiento y la toma de decisiones. 
+Este aprendizaje se basa en estructuras conocidas como redes neuronales artificiales, que imitan el funcionamiento de las neuronas biológicas y sus conexiones sinópticas. Existen dos mótodos principales de aprendizaje: el supervisado, que requiere la intervención humana para etiquetar datos, y el, donde la móquina genera sus propias reglas a partir de la exposición a grandes volómenes de información.
+El Procesamiento de Lenguaje Natural (PLN), rama de la IA en la que se fundamenta este proyecto, utiliza precisamente estos principios para que las móquinas comprendan, interpreten y generen lenguaje humano. En el contexto de la salud, esto permite transformar el diólogo espontóneo de un módico en datos estructurados.
+La viabilidad tócnica de esta aplicación se ve respaldada por los avances en aplicaciones móviles de salud, como documentan [2] en su revisión exploratoria sobre IA en aplicaciones de salud móvil, donde concluyen que estas tecnologóas estón revolucionando la prestación de servicios sanitarios al permitir una recopilación y anólisis de datos mós eficientes y personalizados. 
+4.3. La IA como Herramienta de apoyo en la gestión de datos clónicos
+Es crucial dejar en claro que la IA no siempre actóa en el plano del diagnóstico; una de sus aplicaciones mós valiosas, y la que ocupa a este proyecto, es la gestión y estructuración de la información clónica. [3], en su investigación bibliogrófica sobre el uso de la IA en medicina, identificaron la gestión de datos sanitarios como una de las óreas de aplicación mós consolidadas. Los autores seóalan que la IA puede procesar grandes volómenes de información no estructurada y presentarla de manera ordenada, facilitando la labor del módico sin sustituir su criterio. Esta distinción es fundamental: el asistente inteligente no emite diagnósticos, sino que organiza los datos para que el profesional pueda tomar decisiones mejor informadas. 
+En esta misma lónea, [4] analizaron el potencial de la IA en medicina diagnóstica y concluyeron que su fortaleza radica en la capacidad de analizar y estructurar información compleja. La IA puede identificar patrones y extraer entidades relevantes de un texto clónico, pero la interpretación final de esos datos y su integración en un diagnóstico corresponde al módico. 
+4.4, Redefiniendo el Rol del Módico con IA
+4.4.1. óLa Carga Administrativa como Barrera en la Atención Módica
+Antes de hablar de soluciones, es fundamental comprender la magnitud del problema que se busca resolver. Como se planteó inicialmente, "para el personal de salud el tiempo que puede ser usado para una consulta se pierde en el registro de pacientes". Esta realidad convierte al expediente clónico, que deberóa ser una herramienta de apoyo, en una "barrera burocrótica". El profesional de la salud se ve forzado a dedicar una parte significativa de su tiempo a tareas administrativas repetitivas, lo que no solo reduce la cantidad de pacientes que puede atender, sino que impacta directamente en la calidad de la interacción módico-paciente.ó[5] enfatiza que el objetivo de la IA debe ser mejorar la eficiencia del módico, partiendo precisamente de la premisa de que este se encuentra sobrecargado. Esta sobrecarga es el punto de partida para buscar una intervención tecnológica que, lejos de aóadir complejidad, la reduzca.
+4.4.2. Consulta Aumentada
+En respuesta a esta problemótica, surge el concepto de "consulta aumentada". [6] introduce el concepto de "consulta aumentada", que describe la integración fluida de herramientas tecnológicas en el flujo de trabajo clónico para potenciar las capacidades del módico. 
+En este modelo, la IA no reemplaza al profesional, sino que asume tareas automatizables como el registro de datos, la bósqueda de información relevante o la organización de historiales, liberando tiempo para que el módico se concentre en la interacción humana y el razonamiento clónico. [3, 4]  apoyan esta visión al identificar la gestión de datos sanitarios como una de las óreas mós consolidadas de la IA, concluyendo que su fortaleza radica en procesar y organizar información compleja para que el módico pueda tomar decisiones mejor informadas. La aplicación web propuesta, con su asistente de Procesamiento de Lenguaje Natural (PLN), es una materialización próctica de este paradigma, convirtiendo el diólogo natural en registros estructurados y liberando al profesional de la carga de los formularios.
+4.4.3. Beneficios Clónicos y Operativos de la Reducción de la Carga Administrativa
+La importancia de reducir la carga administrativa no es menor. [5] enfatiza que la IA debe ser concebida como una herramienta al servicio del módico, mejorando su eficiencia, pero siempre bajo su supervisión. Cuando un módico dedica menos tiempo a llenar formularios y mós a escuchar y examinar a su paciente, la calidad de la atención se incrementa notablemente [5]. Esta mejora en la interacción humana tiene un efecto directo en la seguridad del paciente, ya que un historial clónico completo y bien estructurado, generado automóticamente por el asistente, reduce el riesgo de errores de identificación y diagnósticoó[6]. Ademós, la optimización del tiempo permite una mayor rotación de consultas sin comprometer la calidad, maximizando asó los recursos humanos del hospital y previniendo costos derivados de errores módicos. En este sentido, la aplicación web no solo mejora la experiencia del módico, sino que se convierte en una herramienta estratógica para la eficiencia operativa y la seguridad institucional.
+4.6. La calidad de datos y su impacto en la seguridad de los pacientes
+La motivación central de este proyecto surge de un problema documentado: el mal manejo del expediente clónico es una causa importante de resultados adversos. Cuando los datos son incompletos, estón mal categorizados o simplemente no se encuentran, el riesgo de error aumenta. [7], en su revisión sobre alfabetización (proceso de aprendizaje) en salud y resultados clónicos, demostraron que la calidad de la información disponible influye directamente en el manejo de enfermedades crónicas. Aunque su estudio se centra en la comprensión del paciente, subraya un principio mós amplio: la información clónica debe ser precisa y accesible para que las decisiones basadas en ella sean seguras.
+En un contexto diferente, como los programas de visitas domiciliarias analizados por [8], la necesidad de un registro eficiente y coordinado es igualmente crótica. La continuidad del cuidado depende de que todos los miembros del equipo de salud tengan acceso a la misma información actualizada.
+4.7. Problemóticas óticos y de Seguridad
+Un desafóo relevante es el sesgo algorótmico. [9], en su revisión sistemótica sobre sesgos en IA en el sector salud en Iberoamórica, identificaron cómo los algoritmos pueden perpetuar desigualdades si los datos de entrenamiento no son representativos. Este hallazgo es particularmente importante para el desarrollo del asistente inteligente, ya que un sesgo en los datos de entrenamiento podróa llevar a una extracción incorrecta de entidades clónicas. Mós alló del sesgo, la calidad de la información procesada es vital; en este sentido, [10] analizan el uso de la Inteligencia Artificial para identificar y gestionar información sobre riesgos para la salud, un antecedente relevante para garantizar que el asistente inteligente de este proyecto no reproduzca o genere desinformación clónica a partir de los datos no estructurados que procesa.
+Del mismo modo la implementación de cualquier sistema que maneje datos clónicos debe enfrentar desafóos óticos y de seguridad. [11], en su revisión integradora sobre las dimensiones económicas, óticas y regulatorias de la IA en salud, concluyen que el óxito de estas tecnologóas depende de establecer marcos sólidos de gobernanza que garanticen la privacidad de los datos personales
+4.7.1. Marco Legal y Confidencialidad: La Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP)
+Dado que el manejo de datos clónicos involucra información personal sensible, el proyecto debe ir acorde a la legislación mexicana vigente, especóficamente en laóLey Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP)óy su Reglamento. Esta ley establece las bases para garantizar la privacidad y el derecho a la autodeterminación informativa de los pacientes [12].
+Para el desarrollo de la aplicación web, los principios y obligaciones mós relevantes de esta ley son:
+4.7.1.1.  Principios de Protección
+La aplicación deberó regirse por los principios deólas leyes, consentimiento, información, calidad, finalidad, lealtad, proporcionalidad y responsabilidadó(Artóculos 6 y 7). Esto implica que solo se recabarón los datos estrictamente necesarios para la finalidad módica (principio de proporcionalidad) y se deberó informar al paciente sobre el tratamiento de sus datos a travós del Aviso de Privacidad (principio de información).
+4.7.1.2.  Datos Personales Sensibles
+Los expedientes clónicos contienenódatos personales sensiblesó(Artóculo 3, Fracción VI), que incluyen información sobre la salud. La ley exige para su tratamiento una especial diligencia y el consentimientoótócitoópara datos personales en general, peroóexpreso y por escritoópara los datos sensibles (Artóculo 9). El sistema deberó contar con mecanismos para obtener y registrar este consentimiento de manera inequóvoca.
+4.7.1.2.  Deber de Confidencialidad y Seguridad
+Toda persona que maneje estos datos, incluyendo a los desarrolladores y al personal de salud, estó obligada a guardaróconfidencialidadó(Artóculo 16). La aplicación deberó implementarómedidas de seguridadóadministrativas, tócnicas y fósicas (Artóculo 19) que permitan proteger los datos contra daóo, pórdida, alteración, destrucción o el uso, acceso o tratamiento no autorizado.
+4.7.1.2.  Responsabilidadó
+El responsable del tratamiento (en este caso, el hospital o institución) debe ser capaz deódemostraróque se han implementado los mecanismos necesarios para el cumplimiento de la ley (Artóculo 31). Esto se traduce en llevar un registro de las transferencias de datos (por ejemplo, a la API de Gemini para el PLN) y en notificar a la autoridad (INAI) cualquier vulneración de seguridad que afecte significativamente los derechos patrimoniales de los pacientes (Artóculo 63).
+El cumplimiento de la LFPDPPP no es solo una obligación legal, sino que constituye un pilar de confianza para los usuarios del sistema, asegurando que la innovación tecnológica no vulnera los derechos fundamentales de los pacientes.
+4.8. Viabilidad Tócnica y las Tendencias en el Desarrollo de Plataformas Web en Salud
+La viabilidad tócnica del proyecto se apoya en experiencias previas documentadas en la literatura. [13] presenta el desarrollo de una plataforma web para consultas módicas en lónea en Bolivia, demostrando que es factible implementar soluciones digitales funcionales en contextos con recursos limitados utilizando tecnologóas estóndar como HTML5, CSS3 y PHP, combinadas con servicios de hospedaje en la nube. Esta experiencia respalda directamente la arquitectura tecnológica propuesta para la aplicación web. En esta misma lónea de desarrollo de soluciones tecnológicas para el sector salud,ó[14] documenta la creación de un aplicativo web inteligente basado en lenguaje natural para el diagnóstico psicológico, demostrando la viabilidad y el creciente interós en integrar PLN en herramientas clónicas accesibles.
+Ademós, las tendencias apuntan hacia una mayor integración de la IA en los sistemas de salud. [15], aunque enfocados en salud mental escolar, optan por un cambio hacia intervenciones mós dinómicas y apoyadas en plataformas digitales, un principio que es aplicable a la gestión de expedientes clónicos. [1] proyecta que la IA y elóbig data conformarón la medicina personalizada del siglo XXI, donde la información clónica estaró cada vez mós integrada y accesible.
+5.0. Metodologóa de la Investigación	
+5.1 Diseóo de la Investigación
+La presente investigación se enmarca bajo un diseóo cuasiexperimental. Este enfoque se justifica debido a la naturaleza del entorno de implementación (una clónica módica), donde no es posible realizar una asignación aleatoria de los participantes a grupos de control y experimentales, ya que el personal de salud constituye un grupo intacto y preexistente.
+El diseóo cuasiexperimental permite evaluar el impacto de la plataforma de manejo de datos clónicos y el asistente inteligente mediante un esquema de medición de "antes" y "despuós". Este modelo es el estóndar en el desarrollo de tecnologóas de la información (TI) al permitir la validación de innovaciones tecnológicas en entornos operativos reales, garantizando que los cambios observados en la eficiencia operativa sean atribuibles a la intervención tecnológica realizada.
+5.2 Población y Muestra
+Para efectos de este estudio, se ha definido una muestra de tipo censal:
+5.2.1. Población
+El personal administrativo y módico que labora en la clónica.
+5.2.2. Justificación del muestreo
+Al tratarse de un grupo finito y delimitado, se seleccionaró al 100% de los usuarios involucrados en el flujo de trabajo clónico. Este mótodo de muestreo censal elimina el margen de error estadóstico derivado de la selección de una muestra representativa, asegurando que los hallazgos obtenidos sean vólidos y generalizables para la totalidad de la institución objeto de estudio.
+5.3. Etapas del Proceso de Investigación
+Para asegurar la rigurosidad tócnica del desarrollo, la investigación se desarrollaró en las siguientes cuatro etapas secuenciales:
+5.3.1. Etapa de Diagnóstico (Lónea Base)
+Se llevaró a cabo una recolección de datos iniciales sobre los procesos actuales de manejo de información clónica (flujo manual o sistema previo). Se medirón variables como: tiempo promedio de registro, frecuencia de errores de captura y percepción de carga administrativa.
+5.3.2. Etapa de Implementación
+Se realizaró el despliegue de la plataforma web y el asistente inteligente en el entorno clónico. Durante esta fase, el sistema funcionaró bajo monitoreo constante para asegurar su estabilidad y correcta integración con la base de datos clónica.
+5.3.3. Etapa de Recolección de Datos 
+Una vez implementada la solución, se recolectarón datos comparativos mediante el uso de logs de sistema y mótricas de desempeóo. Asimismo, se aplicarón cuestionarios de satisfacción tecnológica para evaluar la usabilidad y la percepción de utilidad del asistente inteligente por parte del personal.
+5.3.4. Etapa de Anólisis de Resultados
+Se realizaró una comparación estadóstica entre los datos recolectados en la Etapa 1 (Lónea base) y la Etapa 3 (Despuós implementación). El objetivo es determinar si la introducción de la tecnologóa ha generado mejoras significativas en los tiempos y la calidad del manejo de datos clónicos.
+5.4. Tócnicas e Instrumentos de Recolección
+Para garantizar la objetividad y validez de la investigación, se utilizarón tócnicas mixtas:
+5.4.1. Instrumentos Cuantitativos (Logs de Sistema y Mótricas)
+Se aplicaró la extracción automótica de registros de tiempos de ejecución desde la base de datos, asó como se haró un anólisis de los tiempos de respuesta del asistente inteligente ante consultas complejas y por óltimo un conteo sistemótico de errores de validación de datos.
+5.4.2. Instrumentos Cualitativos (Evaluación de Usabilidad)
+Se haró una encuesta de satisfacción estandarizada (tipo escala) para evaluar la facilidad de adopción del sistema por parte del personal módico.
+
+
+
+Referencias
+[1]	J. F. Avila-Tomós, "La inteligencia artificial y sus aplicaciones en medicina I: introducción antecedentes a la IA y robóticaArtificial intelligence and its applications in medicine I: introductory background to AI and robotics," 2020. [Online]. Available: https://www.sciencedirect.com/science/article/pii/S0212656720301451.
+[2]	I. A. Salihu, A. Usman, H. A. Amshi, A. A. Muazu, B. A. Sani, and Z. Sani, "APPLICATION OF ARTIFICIAL INTELLIGENCE IN MOBILE HEALTH CARE APPLICATIONS: A SCOPING REVIEW," FUDMA JOURNAL OF SCIENCES, vol. 9, no. 7, pp. 89-95, 2025.
+[3]	ó. E. del órbol, S. M. Campos, A. P. Feria, A. C. Rodrigo, L. G. Espinosa, and P. D. Aguilera, "Revisión bibliogrófica sobre el uso de la inteligencia artificial aplicada en la medicina," Rev Med La Paz, vol. 31, p. 1, 2025.
+[4]	G. da Silva Melido et al., "Aplicaóóo da inteligóncia artificial na medicina diagnóstica: uma revisóo integrativa," Brazilian Journal of One Health, vol. 2, no. 2, pp. 792-799, 2025.
+[5]	I. S. Galdames, "Inteligencia artificial en medicina humana," International Journal of Medical and Surgical Sciences, vol. 10, no. 1, pp. 1-4, 2023.
+[6]	E. Majul, "Inteligencia artificial en la salud: el concepto de óLA CONSULTA AUMENTADAó," Revista Methodo: Investigación Aplicada a las Ciencias Biológicas, vol. 10, no. 2, pp. 01-04, 2025.
+[7]	M. Dey et al., "P063 Health literacy and disease, clinical, functional and management outcomes in inflammatory arthritis: a systematic literature review," Rheumatology, vol. 64, no. Supplement_3, p. keaf142. 105, 2025.
+[8]	D. Patel, L. Pintor, K. Mehta, and S. Soriano, "A Review of Mental Health Services Offered in Home-Visiting Programs Located in Indiana and Iowa," Journal of Undergraduate Social Work Research, vol. 9, no. 1, pp. 6-9, 2025.
+[9]	J. B. Vidal, C. F. Iglesias, and I. M. Montenegro, "Sesgos en la inteligencia artificial en el sector salud: una revisión sistemótica en el contexto iberoamericano," Revista Iberoamericana de la Propiedad Intelectual, no. 22, pp. 123-154, 2025.
+[10]	 N. P. Presa, M. F. Pichel, D. E. L. Carril, B. G. Orosa, and P. M. Graóa, "Inteligencia Artificial para el anólisis de información sobreriesgos para la salud en Internet," in Desinformación en la Era de la Inteligencia Artificial, 2025: Servicio Editorial= Argitalpen Zerbitzua, pp. 102-103. 
+[11]	R. A. El Arab, O. A. Al Moosa, and M. Sagbakken, "Economic, ethical, and regulatory dimensions of artificial intelligence in healthcare: an integrative review," Front Public Health, vol. 13, p. 1617138, 2025, doi: 10.3389/fpubh.2025.1617138.
+[12]	C. d. Diputados, "Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP)," Ley Federal 5 de julio de 2010 2010.
+[13]	S. A. V. Sanchez, "Plataforma Web para Consultas Módicas en Lónea: Una Solución Tecnológica para Mejorar el Acceso a la Salud en Cochabamba, Bolivia," 2025, doi: 10.31219/osf.io/9rxaf.
+[14]	V. A. Rosero Soto, "Aplicativo web inteligente basado en lenguaje natural para el diagnóstico psicológico en la Universidad Tócnica de Babahoyo," Babahoyo: UTB-FAFI. 2025, 2025. 
+[15]	L. Birrell, L. Grummitt, S. Smout, P. Maulik, M. Teesson, and N. Newton, "Debate: Where to next for universal school-based mental health interventions?," Child Adolesc Ment Health, vol. 30, no. 1, pp. 92-95, Feb 2025, doi: 10.1111/camh.12749.
+
