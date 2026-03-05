@@ -47,9 +47,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="card shadow-sm border-0 rounded-4">
             <div class="card-body p-5">
                 <div class="text-center mb-4">
-                    <i class="bi bi-hospital text-info" style="font-size: 3rem;"></i>
-                    <h3 class="fw-bold mt-2">ClínicaIA</h3>
-                    <p class="text-muted">Inicio de Sesión</p>
+                    <img src="/clinica_app/public/assets/img/logo_horizontal.png" alt="AURA" class="img-fluid" style="max-height: 80px;">
+                    <p class="text-muted mt-2">Inicio de Sesión</p>
                 </div>
 
                 <?php if ($error): ?>

@@ -6,7 +6,7 @@ requireLogin();
 $medico_id = $_SESSION['medico_id'];
 $isAdmin = ($_SESSION['rol_id'] == 1);
 
-// Handle POST request (Create Exp manual)
+// Handle POST request
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action']) && $_POST['action'] === 'add') {
         $paciente_id = (int)$_POST['paciente_id'];

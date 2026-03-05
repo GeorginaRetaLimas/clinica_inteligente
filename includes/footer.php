@@ -8,5 +8,7 @@
 
 <!-- Bootstrap JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Scripts personalizados de la aplicacion -->
+<script src="/clinica_app/public/assets/js/scripts.js"></script>
 </body>
 </html>

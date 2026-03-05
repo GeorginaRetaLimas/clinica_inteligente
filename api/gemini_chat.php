@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
 
-// Primero cargamos las variables de entorno (al estar integrado en auth/db se podría, pero es mejor incluir db primero)
+// Primero cargamos las variables de entorno
 require_once '../includes/db.php';
 require_once '../includes/auth.php';
 
@@ -29,9 +29,8 @@ if (empty($apiKey)) {
     exit;
 }
 
-$url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" . $apiKey;
+$url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=" . $apiKey;
 
-// Instrucción de sistema para Gemini
 $prompt = "Eres un Asistente Clínico Inteligente apoyando a un médico. Evalúa o estructura la siguiente nota clínica o responde de manera concisa y profesional. La nota es:\n\n" . $texto_clinico;
 
 $data = [
@@ -51,7 +50,7 @@ curl_setopt($ch, CURLOPT_HTTPHEADER, ["Content-Type: application/json"]);
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Apagado temporalmente para entornos XAMPP
 
-$response = curl_execute($ch);
+$response = curl_exec($ch);
 $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 $error = curl_error($ch);
 curl_close($ch);

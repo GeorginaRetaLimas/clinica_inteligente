@@ -1,0 +1,39 @@
+:root {
+    /* Celeste tones (AURA Theme) */
+    --bs-primary: #0dcaf0;
+    --bs-primary-rgb: 13, 202, 240;
+    --bs-body-bg: #f8fcfd;
+}
+
+.bg-celeste {
+    background-color: #0dcaf0 !important;
+    color: #fff;
+}
+
+.btn-celeste {
+    background-color: #0dcaf0;
+    color: white;
+    border: none;
+}
+
+.btn-celeste:hover {
+    background-color: #0baccc;
+    color: white;
+}
+
+body {
+    background-color: var(--bs-body-bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.navbar-custom {
+    background-color: #ffffff;
+    border-bottom: 2px solid #0dcaf0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.main-content {
+    flex: 1;
+}

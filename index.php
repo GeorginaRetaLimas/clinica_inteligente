@@ -99,9 +99,12 @@ $total_expedientes = $pdo->query($sqlExp)->fetch()['total'];
     <div class="col-md-12 text-center">
         <div class="card bg-info text-white shadow-sm border-0 rounded-4 p-4">
             <div class="card-body">
-                <h4 class="fw-bold"><i class="bi bi-robot"></i> Asistente de IA Disponible</h4>
-                <p class="mb-4">Use nuestro asistente con Procesamiento de Lenguaje Natural para capturar expedientes rápidamente mendiante texto dictado.</p>
-                <a href="modulos/chat_ia.php" class="btn btn-light text-info fw-bold rounded-pill px-4">Abrir Asistente</a>
+                <h4 class="fw-bold">
+                    <img src="/clinica_app/public/assets/img/logo.png" alt="AURA" width="40" height="40" class="me-2 rounded-circle object-fit-cover bg-white">
+                    Asistente Clínico AURA Disponible
+                </h4>
+                <p class="mb-4 mt-3">Use nuestro asistente con Procesamiento de Lenguaje Natural para capturar expedientes rápidamente mendiante texto dictado.</p>
+                <a href="modulos/chat_ia.php" class="btn btn-light text-info fw-bold rounded-pill px-4">Abrir Asistente AURA</a>
             </div>
         </div>
     </div>

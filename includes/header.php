@@ -12,41 +12,7 @@ if (session_status() === PHP_SESSION_NONE) {
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <style>
-        :root {
-            /* Celeste tones */
-            --bs-primary: #0dcaf0;
-            --bs-primary-rgb: 13, 202, 240;
-            --bs-body-bg: #f8fcfd;
-        }
-        .bg-celeste {
-            background-color: #0dcaf0 !important;
-            color: #fff;
-        }
-        .btn-celeste {
-            background-color: #0dcaf0;
-            color: white;
-            border: none;
-        }
-        .btn-celeste:hover {
-            background-color: #0baccc;
-            color: white;
-        }
-        body {
-            background-color: var(--bs-body-bg);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-        .navbar-custom {
-            background-color: #ffffff;
-            border-bottom: 2px solid #0dcaf0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        .main-content {
-            flex: 1;
-        }
-    </style>
+    <link href="/clinica_app/public/assets/css/styles.css" rel="stylesheet">
 </head>
 <body>
 
@@ -54,7 +20,7 @@ if (session_status() === PHP_SESSION_NONE) {
 <nav class="navbar navbar-expand-lg navbar-custom mb-4">
     <div class="container">
         <a class="navbar-brand text-info fw-bold" href="/clinica_app/index.php">
-            <i class="bi bi-hospital"></i> ClínicaIA
+            <img src="/clinica_app/public/assets/img/nombre_app.png" alt="AURA" style="max-height: 35px;">
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
