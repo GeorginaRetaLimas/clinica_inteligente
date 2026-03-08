@@ -19,18 +19,8 @@ else {
 require_once '../includes/header.php';
 ?>
 
-<div class="row mb-3">
-    <div class="col-12 text-center">
-        <h2 class="fw-bold text-info">
-            <img src="/clinica_app/public/assets/img/logo.png" alt="AURA" width="45" height="45" class="me-2 rounded-circle object-fit-cover shadow-sm">
-            Asistente Médico AURA
-        </h2>
-        <p class="text-muted">Procesamiento de Lenguaje Natural para captura de historiales</p>
-    </div>
-</div>
-
 <div class="row justify-content-center">
-    <div class="col-md-8 col-lg-6">
+    <div class="col-md-10 col-lg-10">
         <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
             <!-- Header Chat -->
             <div class="card-header bg-info text-white p-3 d-flex justify-content-between align-items-center">
