@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const chatArea = document.getElementById('chatArea');
     const btnMic = document.getElementById('btnMic');
     const btnSendText = document.getElementById('btnSendText');
+    let current_conversacion_id = null;
 
     if (!form || !input || !chatArea) return; // Solo ejecutar si estamos en la vista de chat
 
@@ -32,7 +33,10 @@ document.addEventListener('DOMContentLoaded', function () {
     form.addEventListener('submit', async function (e) {
         e.preventDefault();
         const text = input.value.trim();
-        if (!text) return;
+        if (!text || !current_conversacion_id) {
+            if (!current_conversacion_id) alert("Por favor selecciona un chat del panel lateral.");
+            return;
+        }
 
         // Añadir Burbuja de Usuario (Médico)
         const now = new Date();
@@ -70,7 +74,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const response = await fetch('/clinica_app/api/gemini_chat.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ texto: text })
+                body: JSON.stringify({ texto: text, conversacion_id: current_conversacion_id })
             });
 
             const data = await response.json();
@@ -173,18 +177,58 @@ document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.wa-contact').forEach(c => c.classList.remove('active', 'bg-light'));
             this.classList.add('active', 'bg-light');
 
-            // Aqui se podría cargar el historial del paciente
             const name = this.querySelector('h6').innerText;
             const docName = document.getElementById('userDropdown') ? document.getElementById('userDropdown').innerText.trim() : 'Doctor';
-            chatArea.innerHTML = `
-                <div class="clearfix">
-                    <div class="wa-bubble-in shadow-sm">
-                        <p class="mb-0 text-dark" style="font-size: 0.95rem;">Hola Dr. ${docName}. Has seleccionado al paciente <strong>${name}</strong>. ¿Qué deseas registrar de su consulta?</p>
-                        <span class="wa-time">${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}</span>
-                    </div>
-                </div>`;
+            const pacienteId = this.dataset.pacienteId || '';
+
+            chatArea.innerHTML = `<div class="text-center p-3 text-muted"><div class="spinner-border spinner-border-sm text-info"></div> Cargando historial seguro...</div>`;
+
+            fetch(`/clinica_app/api/load_chat.php?paciente_id=${pacienteId}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        current_conversacion_id = data.conversacion_id;
+                        chatArea.innerHTML = '';
+
+                        if (data.mensajes.length === 0) {
+                            chatArea.innerHTML = `
+                            <div class="clearfix">
+                                <div class="wa-bubble-in shadow-sm">
+                                    <p class="mb-0 text-dark" style="font-size: 0.95rem;">Hola ${docName}. Has iniciado un chat **${pacienteId ? 'con enfoque en ' + name : 'General / Asistente'}**. ¿En qué puedo ayudarte hoy?</p>
+                                    <span class="wa-time">${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}</span>
+                                </div>
+                            </div>`;
+                        } else {
+                            data.mensajes.forEach(m => {
+                                const isMedico = m.remitente === 'medico';
+                                const bubbleClass = isMedico ? 'wa-bubble-out' : 'wa-bubble-in';
+                                const ticks = isMedico ? ' <i class="bi bi-check-all text-info" style="font-size: 1rem;"></i>' : '';
+
+                                const mHTML = `
+                                <div class="clearfix">
+                                    <div class="${bubbleClass} shadow-sm">
+                                        <p class="mb-0 text-dark" style="font-size: 0.95rem;">${m.texto.replace(/\\n/g, '<br>')}</p>
+                                        <span class="wa-time">${m.fecha}${ticks}</span>
+                                    </div>
+                                </div>`;
+                                chatArea.insertAdjacentHTML('beforeend', mHTML);
+                            });
+                            chatArea.scrollTop = chatArea.scrollHeight;
+                        }
+                    } else {
+                        chatArea.innerHTML = `<div class="text-danger p-3 text-center">Error al cargar chat cifrado.</div>`;
+                    }
+                }).catch(err => {
+                    chatArea.innerHTML = `<div class="text-danger p-3 text-center">Error de red.</div>`;
+                });
         });
     });
+
+    // Auto-seleccionar primer chat (General) al cargar
+    setTimeout(() => {
+        const firstContact = document.querySelector('.wa-contact');
+        if (firstContact) firstContact.click();
+    }, 300);
 
     // Filtro de Contactos (Buscador)
     const searchInput = document.getElementById('waSearchInput');

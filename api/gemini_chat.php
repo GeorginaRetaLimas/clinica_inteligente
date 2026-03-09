@@ -4,6 +4,7 @@ header('Content-Type: application/json; charset=utf-8');
 // Primero cargamos las variables de entorno
 require_once '../includes/db.php';
 require_once '../includes/auth.php';
+require_once '../includes/audit.php'; // Para encriptarMensajeAURA
 
 // Validar que un médico/usuario esté solicitando esto
 if (!isLogged()) {
@@ -15,11 +16,19 @@ if (!isLogged()) {
 $inputJSON = file_get_contents('php://input');
 $input = json_decode($inputJSON, TRUE);
 $texto_clinico = $input['texto'] ?? '';
+$conversacion_id = $input['conversacion_id'] ?? null;
 
-if (empty($texto_clinico)) {
-    echo json_encode(['status' => 'error', 'mensaje' => 'Texto vacío']);
+if (empty($texto_clinico) || !$conversacion_id) {
+    echo json_encode(['status' => 'error', 'mensaje' => 'Texto o conversación vacío.']);
     exit;
 }
+
+// 1. Guardar mensaje del Médico en BD
+$cifrado_medico = encriptarMensajeAURA($texto_clinico);
+$stmt = $pdo->prepare("INSERT INTO mensajes_aura (conversacion_id, remitente, contenido_cifrado, iv_hex, tipo_mensaje) VALUES (?, 'medico', ?, ?, 'texto')");
+$stmt->execute([$conversacion_id, $cifrado_medico['cifrado'], $cifrado_medico['iv_hex']]);
+// actualizar ultimo acceso
+$pdo->prepare("UPDATE conversaciones_aura SET ultimo_mensaje_at = NOW() WHERE id = ?")->execute([$conversacion_id]);
 
 // Configuración de Gemini API leyendo desde el archivo .env
 $apiKey = $_ENV['GEMINI_API_KEY'] ?? '';
@@ -65,6 +74,11 @@ elseif ($httpcode !== 200) {
 else {
     $resDecoded = json_decode($response, true);
     $geminiText = $resDecoded['candidates'][0]['content']['parts'][0]['text'] ?? 'No se pudo generar una respuesta.';
+
+    // 2. Guardar mensaje de la IA en BD
+    $cifrado_ia = encriptarMensajeAURA($geminiText);
+    $stmt = $pdo->prepare("INSERT INTO mensajes_aura (conversacion_id, remitente, contenido_cifrado, iv_hex, tipo_mensaje) VALUES (?, 'aura', ?, ?, 'texto')");
+    $stmt->execute([$conversacion_id, $cifrado_ia['cifrado'], $cifrado_ia['iv_hex']]);
 
     echo json_encode([
         "status" => "success",

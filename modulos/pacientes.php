@@ -1,6 +1,7 @@
 <?php
 require_once '../includes/db.php';
 require_once '../includes/auth.php';
+require_once '../includes/audit.php';
 requireLogin();
 
 $medico_id = $_SESSION['medico_id'];
@@ -8,7 +9,10 @@ $isAdmin = ($_SESSION['rol_id'] == 1);
 
 // Handle POST request Create / Update / Delete
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['action']) && $_POST['action'] === 'add') {
+    if (isset($_POST['action'])) {
+        $action = $_POST['action'];
+
+        // Datos comnes
         $nombre = $_POST['nombre'] ?? '';
         $ap = $_POST['apellido_paterno'] ?? '';
         $am = $_POST['apellido_materno'] ?? '';
@@ -17,18 +21,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $telefono = $_POST['telefono'] ?? '';
         $tipo_sangre_id = !empty($_POST['tipo_sangre']) ? (int)$_POST['tipo_sangre'] : null;
 
-        $sql = "INSERT INTO pacientes (nombre, apellido_paterno, apellido_materno, fecha_nacimiento, sexo, telefono, tipo_sangre_id) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$nombre, $ap, $am, $fecha_nacimiento, $sexo, $telefono, $tipo_sangre_id]);
-        $nuevo_id = $pdo->lastInsertId();
+        if ($action === 'add') {
+            $sql = "INSERT INTO pacientes (nombre, apellido_paterno, apellido_materno, fecha_nacimiento, sexo, telefono, tipo_sangre_id) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?)";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$nombre, $ap, $am, $fecha_nacimiento, $sexo, $telefono, $tipo_sangre_id]);
+            $nuevo_id = $pdo->lastInsertId();
 
-        if (!$isAdmin) {
-            $pdo->prepare("INSERT INTO paciente_medico (paciente_id, medico_id) VALUES (?, ?)")->execute([$nuevo_id, $medico_id]);
+            if (!$isAdmin) {
+                $pdo->prepare("INSERT INTO paciente_medico (paciente_id, medico_id) VALUES (?, ?)")->execute([$nuevo_id, $medico_id]);
+            }
+
+            $datos_despues = ['id' => $nuevo_id, 'nombre' => $nombre, 'apellido_paterno' => $ap, 'fecha_nacimiento' => $fecha_nacimiento, 'sexo' => $sexo, 'telefono' => $telefono, 'tipo_sangre_id' => $tipo_sangre_id];
+            registrarAuditoria($pdo, $medico_id, 'pacientes', $nuevo_id, 'INSERT', null, $datos_despues);
+
+            header('Location: pacientes.php?msg=added');
+            exit;
         }
+        elseif ($action === 'edit') {
+            $id = (int)$_POST['id'];
 
-        header('Location: pacientes.php?msg=added');
-        exit;
+            // Obtener antes
+            $stmt = $pdo->prepare("SELECT * FROM pacientes WHERE id = ?");
+            $stmt->execute([$id]);
+            $datos_antes = $stmt->fetch();
+
+            if ($datos_antes) {
+                $sql = "UPDATE pacientes SET nombre = ?, apellido_paterno = ?, apellido_materno = ?, fecha_nacimiento = ?, sexo = ?, telefono = ?, tipo_sangre_id = ? WHERE id = ?";
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute([$nombre, $ap, $am, $fecha_nacimiento, $sexo, $telefono, $tipo_sangre_id, $id]);
+
+                $datos_despues = $datos_antes;
+                $datos_despues['nombre'] = $nombre;
+                $datos_despues['apellido_paterno'] = $ap;
+                $datos_despues['apellido_materno'] = $am;
+                $datos_despues['fecha_nacimiento'] = $fecha_nacimiento;
+
+                registrarAuditoria($pdo, $medico_id, 'pacientes', $id, 'UPDATE', $datos_antes, $datos_despues);
+            }
+            header('Location: pacientes.php?msg=updated');
+            exit;
+        }
+        elseif ($action === 'delete') {
+            $id = (int)$_POST['id'];
+
+            $stmt = $pdo->prepare("SELECT * FROM pacientes WHERE id = ?");
+            $stmt->execute([$id]);
+            $datos_antes = $stmt->fetch();
+
+            if ($datos_antes) {
+                $pdo->prepare("UPDATE pacientes SET activo = 0 WHERE id = ?")->execute([$id]);
+
+                $datos_despues = $datos_antes;
+                $datos_despues['activo'] = 0;
+
+                // Borrado Lógico en Blockchain figurando como DELETE lógico
+                registrarAuditoria($pdo, $medico_id, 'pacientes', $id, 'DELETE', $datos_antes, $datos_despues);
+            }
+            header('Location: pacientes.php?msg=deleted');
+            exit;
+        }
     }
 }
 
@@ -38,14 +90,14 @@ $tipos_sangre = $pdo->query($sqlSangre)->fetchAll();
 
 // Fetch Pacientes
 if ($isAdmin) {
-    $sqlPacientes = "SELECT p.*, t.tipo as tipo_sangre FROM pacientes p LEFT JOIN tipos_sangre t ON p.tipo_sangre_id = t.id";
+    $sqlPacientes = "SELECT p.*, t.tipo as tipo_sangre FROM pacientes p LEFT JOIN tipos_sangre t ON p.tipo_sangre_id = t.id WHERE p.activo = 1";
     $pacientes = $pdo->query($sqlPacientes)->fetchAll();
 }
 else {
     $sqlPacientes = "SELECT p.*, t.tipo as tipo_sangre FROM pacientes p 
                      INNER JOIN paciente_medico pm ON p.id = pm.paciente_id 
                      LEFT JOIN tipos_sangre t ON p.tipo_sangre_id = t.id 
-                     WHERE pm.medico_id = ?";
+                     WHERE pm.medico_id = ? AND p.activo = 1";
     $stmt = $pdo->prepare($sqlPacientes);
     $stmt->execute([$medico_id]);
     $pacientes = $stmt->fetchAll();
@@ -104,8 +156,12 @@ endif; ?>
                                 <td><span class="badge bg-secondary"><?php echo htmlspecialchars($p['tipo_sangre'] ?? 'N/D'); ?></span></td>
                                 <td><?php echo htmlspecialchars($p['telefono']); ?></td>
                                 <td class="text-end">
-                                    <a href="#" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a>
-                                    <a href="#" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="editPaciente(<?php echo htmlspecialchars(json_encode($p)); ?>)"><i class="bi bi-pencil"></i></button>
+                                    <form method="POST" action="" style="display:inline-block;" onsubmit="return confirm('¿Está seguro de eliminar lógicamente este paciente?');">
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="id" value="<?php echo $p['id']; ?>">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                    </form>
                                 </td>
                             </tr>
                         <?php
@@ -180,5 +236,79 @@ endforeach; ?>
     </form>
   </div>
 </div>
+
+<!-- Modal Editar Paciente -->
+<div class="modal fade" id="modalEditPaciente" tabindex="-1" aria-labelledby="modalEditPacienteLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <form class="modal-content" method="POST" action="">
+      <div class="modal-header border-bottom-0 pb-0">
+        <h5 class="modal-title fw-bold" id="modalEditPacienteLabel">Editar Paciente</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="action" value="edit">
+        <input type="hidden" name="id" id="edit_id">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Nombre(s)</label>
+                <input type="text" class="form-control" name="nombre" id="edit_nombre" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Apellido Paterno</label>
+                <input type="text" class="form-control" name="apellido_paterno" id="edit_ap" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Apellido Materno</label>
+                <input type="text" class="form-control" name="apellido_materno" id="edit_am">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Fecha Nacimiento</label>
+                <input type="date" class="form-control" name="fecha_nacimiento" id="edit_fecha" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Sexo</label>
+                <select class="form-select" name="sexo" id="edit_sexo" required>
+                    <option value="M">Masculino</option>
+                    <option value="F">Femenino</option>
+                    <option value="Otro">Otro</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Tipo Sangre</label>
+                <select class="form-select" name="tipo_sangre" id="edit_sangre">
+                    <option value="">Desconocido...</option>
+                    <?php foreach ($tipos_sangre as $ts): ?>
+                        <option value="<?php echo $ts['id']; ?>"><?php echo htmlspecialchars($ts['tipo']); ?></option>
+                    <?php
+endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Teléfono</label>
+                <input type="text" class="form-control" name="telefono" id="edit_tel">
+            </div>
+        </div>
+      </div>
+      <div class="modal-footer border-top-0 pt-0 mt-3">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary text-white">Actualizar Paciente</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function editPaciente(p) {
+    document.getElementById('edit_id').value = p.id;
+    document.getElementById('edit_nombre').value = p.nombre;
+    document.getElementById('edit_ap').value = p.apellido_paterno;
+    document.getElementById('edit_am').value = p.apellido_materno;
+    document.getElementById('edit_fecha').value = p.fecha_nacimiento;
+    document.getElementById('edit_sexo').value = p.sexo;
+    document.getElementById('edit_sangre').value = p.tipo_sangre_id;
+    document.getElementById('edit_tel').value = p.telefono;
+    new bootstrap.Modal(document.getElementById('modalEditPaciente')).show();
+}
+</script>
 
 <?php require_once '../includes/footer.php'; ?>

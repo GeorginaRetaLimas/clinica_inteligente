@@ -1,6 +1,7 @@
 <?php
 require_once '../includes/db.php';
 require_once '../includes/auth.php';
+require_once '../includes/audit.php';
 requireLogin();
 
 $medico_id = $_SESSION['medico_id'];
@@ -8,22 +9,63 @@ $isAdmin = ($_SESSION['rol_id'] == 1);
 
 // Handle POST request (Create / Update / Delete)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['action']) && $_POST['action'] === 'add') {
-        $paciente_id = (int)$_POST['paciente_id'];
-        $fecha = $_POST['fecha_hora'];
-        $motivo = $_POST['motivo'];
+    if (isset($_POST['action'])) {
+        $action = $_POST['action'];
 
-        // Si el admin crea la cita, igual se la podría asignar a otro médico, 
-        // pero lo haremos simple, asume que es la cita del médico actual.
-        // Si es admin, dejamos $medico_id_cita como el suyo, o podríamos pedirlo.
-        $medico_id_cita = $medico_id;
+        if ($action === 'add') {
+            $paciente_id = (int)$_POST['paciente_id'];
+            $fecha = $_POST['fecha_hora'];
+            $motivo = $_POST['motivo'];
+            $medico_id_cita = $medico_id;
 
-        $sql = "INSERT INTO citas (paciente_id, medico_id, fecha_hora, motivo) VALUES (?, ?, ?, ?)";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$paciente_id, $medico_id_cita, $fecha, $motivo]);
+            $sql = "INSERT INTO citas (paciente_id, medico_id, fecha_hora, motivo) VALUES (?, ?, ?, ?)";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$paciente_id, $medico_id_cita, $fecha, $motivo]);
+            $nuevo_id = $pdo->lastInsertId();
 
-        header('Location: citas.php?msg=added');
-        exit;
+            $datos_despues = ['id' => $nuevo_id, 'paciente_id' => $paciente_id, 'fecha' => $fecha, 'motivo' => $motivo];
+            registrarAuditoria($pdo, $medico_id, 'citas', $nuevo_id, 'INSERT', null, $datos_despues);
+
+            header('Location: citas.php?msg=added');
+            exit;
+        }
+        elseif ($action === 'edit') {
+            $id = (int)$_POST['id'];
+            $estado = $_POST['estado'];
+            $fecha = $_POST['fecha_hora'];
+            $motivo = $_POST['motivo'];
+
+            $stmt = $pdo->prepare("SELECT * FROM citas WHERE id = ?");
+            $stmt->execute([$id]);
+            $datos_antes = $stmt->fetch();
+
+            if ($datos_antes) {
+                $pdo->prepare("UPDATE citas SET fecha_hora = ?, motivo = ?, estado = ? WHERE id = ?")->execute([$fecha, $motivo, $estado, $id]);
+                $datos_despues = $datos_antes;
+                $datos_despues['fecha_hora'] = $fecha;
+                $datos_despues['motivo'] = $motivo;
+                $datos_despues['estado'] = $estado;
+                registrarAuditoria($pdo, $medico_id, 'citas', $id, 'UPDATE', $datos_antes, $datos_despues);
+            }
+            header('Location: citas.php?msg=updated');
+            exit;
+        }
+        elseif ($action === 'delete') {
+            $id = (int)$_POST['id'];
+
+            $stmt = $pdo->prepare("SELECT * FROM citas WHERE id = ?");
+            $stmt->execute([$id]);
+            $datos_antes = $stmt->fetch();
+
+            if ($datos_antes) {
+                $pdo->prepare("UPDATE citas SET estado = 'cancelada' WHERE id = ?")->execute([$id]);
+                $datos_despues = $datos_antes;
+                $datos_despues['estado'] = 'cancelada';
+                registrarAuditoria($pdo, $medico_id, 'citas', $id, 'DELETE', $datos_antes, $datos_despues);
+            }
+            header('Location: citas.php?msg=deleted');
+            exit;
+        }
     }
 }
 
@@ -116,10 +158,18 @@ endif; ?>
                                 <td><span class="badge rounded-pill <?php echo $c_badge; ?>"><?php echo ucfirst(str_replace('_', ' ', $c['estado'])); ?></span></td>
                                 <td class="text-end">
                                     <?php if ($c['estado'] === 'pendiente' || $c['estado'] === 'confirmada'): ?>
-                                        <a href="#" class="btn btn-sm btn-outline-success" title="Iniciar Consulta"><i class="bi bi-journal-medical"></i> Consulta</a>
+                                        <a href="expedientes.php?cita_id=<?php echo $c['id']; ?>" class="btn btn-sm btn-outline-success" title="Iniciar Consulta"><i class="bi bi-journal-medical"></i></a>
                                     <?php
         endif; ?>
-                                    <a href="#" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="editCita(<?php echo htmlspecialchars(json_encode($c)); ?>)" title="Editar"><i class="bi bi-pencil"></i></button>
+                                    <?php if ($c['estado'] !== 'cancelada'): ?>
+                                    <form method="POST" action="" style="display:inline-block;" onsubmit="return confirm('¿Cancelar esta cita?');">
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="id" value="<?php echo $c['id']; ?>">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Cancelar"><i class="bi bi-x-circle"></i></button>
+                                    </form>
+                                    <?php
+        endif; ?>
                                 </td>
                             </tr>
                         <?php
@@ -173,5 +223,52 @@ endforeach; ?>
     </form>
   </div>
 </div>
+
+<!-- Modal Edit Cita -->
+<div class="modal fade" id="modalEditCita" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form class="modal-content" method="POST" action="">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">Actualizar Cita</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="action" value="edit">
+        <input type="hidden" name="id" id="edit_id">
+        <div class="mb-3">
+            <label>Estado</label>
+            <select name="estado" id="edit_estado" class="form-select" required>
+                <option value="pendiente">Pendiente</option>
+                <option value="confirmada">Confirmada</option>
+                <option value="cancelada">Cancelada</option>
+                <option value="completada">Completada</option>
+                <option value="no_asistio">No Asistió</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label>Fecha y Hora</label>
+            <input type="datetime-local" name="fecha_hora" id="edit_fecha" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label>Motivo</label>
+            <input type="text" name="motivo" id="edit_motivo" class="form-control">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary text-white">Actualizar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function editCita(c) {
+    document.getElementById('edit_id').value = c.id;
+    document.getElementById('edit_estado').value = c.estado;
+    document.getElementById('edit_fecha').value = c.fecha_hora;
+    document.getElementById('edit_motivo').value = c.motivo;
+    new bootstrap.Modal(document.getElementById('modalEditCita')).show();
+}
+</script>
 
 <?php require_once '../includes/footer.php'; ?>

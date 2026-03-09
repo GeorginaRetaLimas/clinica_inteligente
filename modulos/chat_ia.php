@@ -39,22 +39,26 @@ require_once '../includes/header.php';
                 </div>
                 <!-- Contacts List -->
                 <div class="wa-contact-list bg-white" id="waContactList">
+                    <!-- Chat General del Médico (Fijado Primer Lugar) -->
+                    <div class="wa-contact" data-paciente-id="">
+                        <img src="/clinica_app/public/assets/img/fabicon/fabicon.png" alt="User" width="45" height="45" class="rounded-circle object-fit-cover bg-white border border-info shadow-sm me-3">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0 fw-bold wa-contact-name">Dr. <?php echo htmlspecialchars($_SESSION['medico_nombre']); ?></h6>
+                            <small class="text-muted text-truncate d-block" style="max-width: 200px;">Chat General / Asistente</small>
+                        </div>
+                    </div>
+
                     <?php if (count($pacientes) > 0): ?>
                         <?php foreach ($pacientes as $pac): ?>
-                            <div class="wa-contact">
+                            <div class="wa-contact" data-paciente-id="<?php echo $pac['id']; ?>">
                                 <img src="/clinica_app/public/assets/img/fabicon/fabicon.png" alt="User" width="45" height="45" class="rounded-circle object-fit-cover bg-white border border-info shadow-sm me-3">
                                 <div class="flex-grow-1">
                                     <h6 class="mb-0 fw-bold wa-contact-name"><?php echo htmlspecialchars($pac['nombre'] . ' ' . $pac['apellido_paterno']); ?></h6>
-                                    <small class="text-muted text-truncate d-block" style="max-width: 200px;">Asignado a mi consultorio</small>
+                                    <small class="text-muted text-truncate d-block" style="max-width: 200px;">Paciente</small>
                                 </div>
                             </div>
                         <?php
     endforeach; ?>
-                    <?php
-else: ?>
-                        <div class="text-center p-4 text-muted">
-                            <small>No hay pacientes agregados</small>
-                        </div>
                     <?php
 endif; ?>
                 </div>
@@ -71,7 +75,7 @@ endif; ?>
                     <div class="d-flex align-items-center text-white">
                         <img src="/clinica_app/public/assets/img/fabicon/fabicon.png" alt="AURA" width="45" height="45" class="rounded-circle object-fit-cover bg-white me-3 border border-2 border-white shadow-sm">
                         <div class="lh-1 text-center">
-                            <h5 class="mb-1 fw-bold text-white">AURA Asistente Médico</h5>
+                            <h5 class="mb-1 fw-bold text-white">AURA</h5>
                             <small class="text-white-50"><i class="bi bi-circle-fill text-success" style="font-size:0.6rem;"></i> En línea</small>
                         </div>
                     </div>
