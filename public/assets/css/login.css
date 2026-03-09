@@ -1,0 +1,122 @@
+:root {
+    --aura-primary: #129cb4;
+    --aura-secondary: #66d2cb;
+    --aura-tertiary: #64aec0;
+    --aura-white: #ffffff;
+}
+
+body.login-page {
+    background-color: var(--aura-white);
+    background-image: url('../img/background/medicos.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+}
+
+/* Ocultar el contenedor extra del header global en login */
+body.login-page .main-content {
+    padding: 0;
+    margin: 0;
+    max-width: 100%;
+    width: 100%;
+}
+
+.login-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+    /* Alinea hacia la izquierda */
+    padding: 2rem;
+}
+
+.login-glass-panel {
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    padding: 3rem;
+    width: 100%;
+    max-width: 500px;
+    margin-left: 5%;
+    /* Separacin desde la izquierda en desktop */
+}
+
+@media (max-width: 768px) {
+    .login-wrapper {
+        justify-content: center;
+        padding: 1rem;
+    }
+
+    .login-glass-panel {
+        margin-left: 0;
+        padding: 2rem;
+    }
+}
+
+.login-logo {
+    max-width: 220px;
+    /* Logo más grande */
+    margin-bottom: 1.5rem;
+}
+
+.login-title {
+    color: var(--aura-primary);
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    font-size: 1.8rem;
+}
+
+.login-subtitle {
+    color: #6c757d;
+    margin-bottom: 2rem;
+    font-size: 0.9rem;
+}
+
+.form-label {
+    font-size: 0.85rem;
+    margin-bottom: 0.3rem;
+    text-align: left;
+    display: block;
+}
+
+.form-control:focus {
+    border-color: var(--aura-secondary);
+    box-shadow: 0 0 0 0.25rem rgba(102, 210, 203, 0.25);
+}
+
+.btn-login {
+    background-color: var(--aura-primary);
+    border-color: var(--aura-primary);
+    color: var(--aura-white);
+    font-weight: bold;
+    border-radius: 8px;
+    padding: 0.75rem;
+    transition: background-color 0.3s, transform 0.1s;
+}
+
+.btn-login:hover {
+    background-color: var(--aura-tertiary);
+    border-color: var(--aura-tertiary);
+    color: var(--aura-white);
+}
+
+.btn-login:active {
+    transform: scale(0.98);
+}
+
+.input-group-text {
+    background-color: transparent;
+    border-right: none;
+    color: var(--aura-primary);
+}
+
+.login-input {
+    border-left: none;
+    font-size: 0.95rem;
+}

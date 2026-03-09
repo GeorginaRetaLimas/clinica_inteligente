@@ -42,40 +42,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 <?php require_once 'includes/header.php'; ?>
 
-<div class="row justify-content-center align-items-center" style="min-height: 80vh;">
-    <div class="col-md-5 col-lg-4">
-        <div class="card shadow-sm border-0 rounded-4">
-            <div class="card-body p-5">
-                <div class="text-center mb-4">
-                    <img src="/clinica_app/public/assets/img/logo_horizontal.png" alt="AURA" class="img-fluid" style="max-height: 80px;">
-                    <p class="text-muted mt-2">Inicio de Sesión</p>
-                </div>
+<!-- Inyectar CSS dedicado del login y limpiar márgenes del container global -->
+<link href="/clinica_app/public/assets/css/login.css" rel="stylesheet">
+<script>document.body.classList.add('login-page');</script>
 
-                <?php if ($error): ?>
-                    <div class="alert alert-danger py-2"><?php echo htmlspecialchars($error); ?></div>
-                <?php
+<div class="login-wrapper">
+    <div class="login-glass-panel text-center">
+        
+        <img src="/clinica_app/public/assets/img/logo.png" alt="AURA Logo" class="login-logo mx-auto d-block" />
+        
+        <h2 class="login-title">Bienvenido a AURA</h2>
+        <p class="login-subtitle">Por favor, inicie sesión en su cuenta.</p>
+        
+        <?php if ($error): ?>
+            <div class="alert alert-danger py-2 w-100 mx-auto" style="max-width: 400px;"><?php echo htmlspecialchars($error); ?></div>
+        <?php
 endif; ?>
 
-                <form method="post" action="login.php">
-                    <div class="form-floating mb-3">
-                        <input type="text" class="form-control rounded-3" id="email" name="email" placeholder="Correo o usuario" required>
-                        <label for="email"><i class="bi bi-person text-muted"></i> Correo Electrónico</label>
-                    </div>
-                    
-                    <div class="form-floating mb-4">
-                        <input type="password" class="form-control rounded-3" id="password" name="password" placeholder="Contraseña" required>
-                        <label for="password"><i class="bi bi-lock text-muted"></i> Contraseña</label>
-                    </div>
-
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-info btn-lg text-white text-uppercase fw-semibold rounded-3 pt-2 pb-2">Ingresar</button>
-                    </div>
-                </form>
+        <form method="post" action="login.php" class="mx-auto" style="max-width: 400px; text-align: left;">
+            <div class="mb-3">
+                <label for="email" class="form-label fw-bold" style="color:#6c757d;">Correo Electrónico o Usuario</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                    <input type="text" class="form-control login-input" id="email" name="email" placeholder="Usuario o correo electrónico" required>
+                </div>
             </div>
-        </div>
-        <div class="text-center mt-3">
-            <small class="text-muted">Si no tiene cuenta, solicítela al administrador.</small>
-        </div>
+            
+            <div class="mb-4">
+                <label for="password" class="form-label fw-bold" style="color:#6c757d;">Contraseña</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                    <input type="password" class="form-control login-input" id="password" name="password" placeholder="Su contraseña" required>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2 mt-4">
+                <button type="submit" class="btn btn-login text-uppercase">Ingresar</button>
+            </div>
+        </form>
     </div>
 </div>
 

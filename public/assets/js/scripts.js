@@ -3,58 +3,70 @@ document.addEventListener('DOMContentLoaded', function () {
     const input = document.getElementById('chatInput');
     const chatArea = document.getElementById('chatArea');
     const btnMic = document.getElementById('btnMic');
+    const btnSendText = document.getElementById('btnSendText');
 
     if (!form || !input || !chatArea) return; // Solo ejecutar si estamos en la vista de chat
 
-    // Auto-resize textarea
+    // Auto-resize textarea and togle Mic/Send
     input.addEventListener('input', function () {
         this.style.height = 'auto';
         this.style.height = (this.scrollHeight < 120 ? this.scrollHeight : 120) + 'px';
+
+        if (this.value.trim().length > 0) {
+            btnMic.classList.add('d-none');
+            btnSendText.classList.remove('d-none');
+        } else if (!isRecording) {
+            btnMic.classList.remove('d-none');
+            btnSendText.classList.add('d-none');
+        }
     });
 
-    // Submit form a la API Gemini Interna
+    // Enter para enviar
+    input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            form.dispatchEvent(new Event('submit'));
+        }
+    });
+
     form.addEventListener('submit', async function (e) {
         e.preventDefault();
         const text = input.value.trim();
         if (!text) return;
 
-        // Add Medico Message
+        // Añadir Burbuja de Usuario (Médico)
         const now = new Date();
         const time = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
 
         const userMsg = `
-        <div class="d-flex mb-4 justify-content-end">
-            <div class="bg-info text-white p-3 rounded-4 shadow-sm" style="border-top-right-radius: 0 !important; max-width: 80%;">
-                <p class="mb-0">${text.replace(/\n/g, '<br>')}</p>
-                <small class="text-white-50 mt-1 d-block text-end" style="font-size: 0.75rem;">${time}</small>
+        <div class="clearfix">
+            <div class="wa-bubble-out shadow-sm">
+                <p class="mb-0 text-dark" style="font-size: 0.95rem;">${text.replace(/\n/g, '<br>')}</p>
+                <span class="wa-time">${time} <i class="bi bi-check-all text-info" style="font-size: 1rem;"></i></span>
             </div>
         </div>`;
-
         chatArea.insertAdjacentHTML('beforeend', userMsg);
 
-        // Clean input
+        // Limpiar Input
         input.value = '';
         input.style.height = 'auto';
-
-        // Scroll to bottom
+        btnMic.classList.remove('d-none');
+        btnSendText.classList.add('d-none');
         chatArea.scrollTop = chatArea.scrollHeight;
 
-        // Typing Indicator
+        // Indicador de Escritura
         const typingId = 'typing-' + Date.now();
         const typingObj = `
-        <div class="d-flex mb-4" id="${typingId}">
-            <div class="me-2">
-                <img src="/clinica_app/public/assets/img/logo.png" width="35" height="35" class="rounded-circle object-fit-cover bg-white" alt="AURA">
-            </div>
-            <div class="bg-white p-3 rounded-4 shadow-sm text-muted" style="border-top-left-radius: 0 !important;">
-                Procesando texto clínico... <span class="spinner-grow spinner-grow-sm text-info ms-2" role="status"></span>
+        <div class="clearfix" id="${typingId}">
+            <div class="wa-bubble-in shadow-sm text-muted fst-italic">
+                AURA está escribiendo <span class="spinner-grow spinner-grow-sm text-success ms-2" role="status"></span>
             </div>
         </div>`;
         chatArea.insertAdjacentHTML('beforeend', typingObj);
         chatArea.scrollTop = chatArea.scrollHeight;
 
         try {
-            // Llama al endpoint de PHP que conecta con Gemini
+            // Llama a la API local de Gemini
             const response = await fetch('/clinica_app/api/gemini_chat.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -67,30 +79,26 @@ document.addEventListener('DOMContentLoaded', function () {
             if (data.status === 'success') {
                 const botMsgParsed = data.respuesta.replace(/\n/g, '<br>');
                 const iaMsg = `
-                <div class="d-flex mb-4">
-                    <div class="me-2">
-                        <img src="/clinica_app/public/assets/img/logo.png" width="35" height="35" class="rounded-circle object-fit-cover bg-white" alt="AURA">
-                    </div>
-                    <div class="bg-white p-3 rounded-4 shadow-sm" style="border-top-left-radius: 0 !important; max-width: 80%;">
-                        <p class="mb-0 text-dark">${botMsgParsed}</p>
-                        <small class="text-muted mt-1 d-block" style="font-size: 0.75rem;">${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}</small>
+                <div class="clearfix">
+                    <div class="wa-bubble-in shadow-sm">
+                        <p class="mb-0 text-dark" style="font-size: 0.95rem;">${botMsgParsed}</p>
+                        <span class="wa-time">${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}</span>
                     </div>
                 </div>`;
                 chatArea.insertAdjacentHTML('beforeend', iaMsg);
             } else {
-                const errorMsg = `
-                <div class="d-flex mb-4 justify-content-start">
-                    <div class="bg-danger text-white p-3 rounded-4 shadow-sm" style="border-top-left-radius: 0 !important;">
+                chatArea.insertAdjacentHTML('beforeend', `
+                <div class="clearfix">
+                    <div class="wa-bubble-in shadow-sm bg-danger text-white border-danger">
                         Error: ${data.mensaje || 'Respuesta no válida de la API'}
                     </div>
-                </div>`;
-                chatArea.insertAdjacentHTML('beforeend', errorMsg);
+                </div>`);
             }
         } catch (err) {
             document.getElementById(typingId).remove();
             chatArea.insertAdjacentHTML('beforeend', `
-            <div class="d-flex mb-4 justify-content-start">
-                <div class="bg-danger text-white p-3 rounded-4 shadow-sm">
+            <div class="clearfix">
+                <div class="wa-bubble-in shadow-sm bg-danger text-white border-danger">
                     Error local de conexión al servidor.
                 </div>
             </div>`);
@@ -99,33 +107,82 @@ document.addEventListener('DOMContentLoaded', function () {
         chatArea.scrollTop = chatArea.scrollHeight;
     });
 
-    // Enter para enviar
-    input.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            form.dispatchEvent(new Event('submit'));
-        }
-    });
+    // Web Speech API Logic
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition;
+    let isRecording = false;
 
-    // Simulación de dictado por voz (Mic)
-    let recording = false;
-    if (btnMic) {
-        btnMic.addEventListener('click', function () {
-            recording = !recording;
-            if (recording) {
-                this.classList.remove('btn-light', 'text-muted');
-                this.classList.add('bg-danger', 'text-white');
-                input.placeholder = "Escuchando...";
-                input.disabled = true;
+    if (SpeechRecognition && btnMic) {
+        recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'es-ES';
+
+        recognition.onstart = function () {
+            isRecording = true;
+            btnMic.innerHTML = '<i class="bi bi-stop-circle-fill fs-4 text-danger pulse-anim"></i>';
+            input.placeholder = "Escuchando audio...";
+            input.disabled = true;
+        };
+
+        recognition.onresult = function (event) {
+            const transcript = event.results[0][0].transcript;
+            input.value = input.value + (input.value ? ' ' : '') + transcript;
+        };
+
+        recognition.onerror = function (event) {
+            console.error("Error en Speech Recognition:", event.error);
+            isRecording = false;
+            resetMicUI();
+        };
+
+        recognition.onend = function () {
+            isRecording = false;
+            resetMicUI();
+        };
+
+        function resetMicUI() {
+            // Check if there's text to display the send button instead of mic
+            if (input.value.trim().length > 0) {
+                btnMic.classList.add('d-none');
+                btnSendText.classList.remove('d-none');
             } else {
-                this.classList.remove('bg-danger', 'text-white');
-                this.classList.add('btn-light', 'text-muted');
-                input.placeholder = "Escriba el motivo de consulta, diagnóstico, etc...";
-                input.disabled = false;
-                // Agrega texto dictado automáticamente por simulación
-                input.value = input.value + (input.value ? ' ' : '') + "La paciente refiere cefalea de 3 días de evolución, acompañada de fiebre no cuantificada. Indico paracetamol 500mg.";
-                setTimeout(() => form.dispatchEvent(new Event('submit')), 500);
+                btnMic.innerHTML = '<i class="bi bi-mic-fill fs-4"></i>';
+            }
+            input.placeholder = "Escribe un mensaje...";
+            input.disabled = false;
+            input.focus();
+        }
+
+        btnMic.addEventListener('click', function () {
+            if (isRecording) {
+                recognition.stop();
+            } else {
+                recognition.start();
             }
         });
+    } else if (btnMic) {
+        btnMic.addEventListener('click', () => {
+            alert("API de dictado por voz no soportada en este navegador (intenta en Chrome o Edge).");
+        });
     }
+
+    // Sidebar Patient interaction visual effect
+    document.querySelectorAll('.wa-contact').forEach(contact => {
+        contact.addEventListener('click', function () {
+            document.querySelectorAll('.wa-contact').forEach(c => c.classList.remove('active', 'bg-light'));
+            this.classList.add('active', 'bg-light');
+
+            // Aqui se podría cargar el historial del paciente
+            const name = this.querySelector('h6').innerText;
+            const docName = document.getElementById('userDropdown') ? document.getElementById('userDropdown').innerText.trim() : 'Doctor';
+            chatArea.innerHTML = `
+                <div class="clearfix">
+                    <div class="wa-bubble-in shadow-sm">
+                        <p class="mb-0 text-dark" style="font-size: 0.95rem;">Hola Dr. ${docName}. Has seleccionado al paciente <strong>${name}</strong>. ¿Qué deseas registrar de su consulta?</p>
+                        <span class="wa-time">${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}</span>
+                    </div>
+                </div>`;
+        });
+    });
 });
