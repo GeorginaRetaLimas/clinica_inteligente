@@ -185,4 +185,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 </div>`;
         });
     });
+
+    // Filtro de Contactos (Buscador)
+    const searchInput = document.getElementById('waSearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('keyup', function () {
+            const term = this.value.toLowerCase();
+            document.querySelectorAll('.wa-contact').forEach(contact => {
+                const name = contact.querySelector('.wa-contact-name').innerText.toLowerCase();
+                if (name.includes(term)) {
+                    contact.style.display = 'flex';
+                } else {
+                    contact.style.display = 'none';
+                }
+            });
+        });
+    }
 });

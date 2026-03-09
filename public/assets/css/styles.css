@@ -1,12 +1,13 @@
 :root {
-    --bs-primary: #3aaaa1;
+    --bs-primary: #129cb4;
     --bs-body-bg: #f8fcfd;
-    --wa-bg-color: #efeae2;
-    --wa-header-bg: #f0f2f5;
-    --wa-border: #d1d7db;
+    --wa-bg-color: #f8fcfd;
+    --wa-header-bg: #129cb4;
+    /* Color principal para cabecera */
+    --wa-border: #64aec0;
     --wa-bubble-in: #ffffff;
-    --wa-bubble-out: #d9fdd3;
-
+    --wa-bubble-out: #e0f7fa;
+    /* Un tono super claro de celeste */
 }
 
 .bg-celeste {
@@ -30,6 +31,20 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+}
+
+body.chat-page {
+    background-image: url('../img/background/consulta_1.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+
+body.chat-page .main-content {
+    max-width: 100%;
+    padding: 0;
+    margin: 0;
 }
 
 .navbar-custom {
@@ -116,8 +131,7 @@ body {
     flex: 1;
     padding: 24px 8%;
     overflow-y: auto;
-    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAMAAAAp4XiDAAAAUVBMVEVhcAAWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhb/3+9eAAAAGnRSTlMAGf5w8j37pXv1rXU9yXvL571l31D9yH31rR+2WcgAAAB9SURBVEjH7dK3DoAwEETRl+4N/v8/UwxQEBQkCJ81m1t5r6WUiEhtzW2tJSJSW3Nba4mI1Nbc1loiIrU1t7WWiEhtzW2tJSJSW3Nba4mI1Nbc1loiIrU1t7WWiEhtzW2tJSJSW3Nba4mI1Nbc1loiIrU1t7WWiMi/tX50AJJ3BhJ/vX4vAAAAAElFTkSuQmCC');
-    background-color: var(--wa-bg-color);
+    background-color: #ffffff;
 }
 
 .wa-footer {
