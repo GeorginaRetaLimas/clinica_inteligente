@@ -38,7 +38,7 @@ if (empty($apiKey)) {
     exit;
 }
 
-$url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=" . $apiKey;
+$url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $apiKey;
 
 // Recuperar contexto del paciente si la conversación está atada a uno
 $contexto_paciente = null;
@@ -73,18 +73,26 @@ $system_prompt = file_get_contents('../prompt_sistema_aura.txt');
 if (!$system_prompt)
     $system_prompt = "Eres un asistente médico inteligente. Responde siempre en JSON.";
 
+// Inicialización del Payload para la IA nativa
 $texto_final_sistema = $system_prompt . "\n\n=== CONTEXTO ACTUAL ===\n" . $contexto_actual;
 
 $data = [
+    "systemInstruction" => [
+        "parts" => [
+            ["text" => $texto_final_sistema]
+        ]
+    ],
     "contents" => [
         [
-            "role" => "model",
-            "parts" => [["text" => $texto_final_sistema]]
-        ],
-        [
             "role" => "user",
-            "parts" => [["text" => $texto_clinico]]
+            "parts" => [
+                ["text" => $texto_clinico]
+            ]
         ]
+    ],
+    "generationConfig" => [
+        "temperature" => 0.1,
+        "responseMimeType" => "application/json"
     ]
 ];
 

@@ -82,12 +82,77 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById(typingId).remove();
 
             if (data.status === 'success') {
-                const botMsgParsed = data.respuesta.replace(/\n/g, '<br>');
+                let botMsgParsed = data.respuesta;
+                let htmlCardComplemento = '';
+
+                try {
+                    // Limpiar markdown incrustado por Gemini
+                    let cleanRes = data.respuesta.replace(/```json/gi, '').replace(/```/g, '').trim();
+                    const auraObj = JSON.parse(cleanRes);
+                    botMsgParsed = auraObj.mensaje_aura;
+
+                    if (auraObj.operacion && auraObj.operacion !== 'CONVERSACION') {
+                        // Construimos una pseudo-card para mostrarle al medico los datos
+                        let badgetsHTML = '';
+                        if (auraObj.operacion !== 'CONSULTAR_DATO') {
+                            if (auraObj.campos_faltantes && auraObj.campos_faltantes.length > 0) {
+                                auraObj.campos_faltantes.forEach(c => {
+                                    badgetsHTML += `<span class="badge bg-danger bg-opacity-10 text-danger border border-danger rounded-pill me-1 mb-1">${c.replace('_', ' ')} faltante</span>`;
+                                });
+                            } else {
+                                badgetsHTML = `<span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill mb-1"><i class="bi bi-check-circle"></i> Datos Completos</span>`;
+                            }
+                        }
+
+                        let dataExtractedHTML = '';
+                        if (auraObj.datos) {
+                            for (const [key, value] of Object.entries(auraObj.datos)) {
+                                if (value !== null && typeof value !== 'object') {
+                                    dataExtractedHTML += `<tr><td class="text-muted fw-semibold border-0" style="font-size:0.8rem; padding: 2px 5px;">${key.replace('_id', '').replace(/_/g, ' ').toUpperCase()}</td><td class="border-0" style="font-size:0.85rem; padding: 2px 5px;">${value}</td></tr>`;
+                                } else if (value !== null && typeof value === 'object') {
+                                    dataExtractedHTML += `<tr><td colspan="2" class="text-info fw-bold border-0 pt-2" style="font-size:0.75rem;">${key.toUpperCase().replace(/_/g, ' ')}</td></tr>`;
+                                    for (const [subKey, subValue] of Object.entries(value)) {
+                                        if (subValue !== null) {
+                                            dataExtractedHTML += `<tr><td class="text-muted fw-semibold border-0" style="font-size:0.8rem; padding: 2px 5px; ps-3"><i class="bi bi-arrow-return-right"></i> ${subKey.replace('_id', '').replace(/_/g, ' ').toUpperCase()}</td><td class="border-0" style="font-size:0.85rem; padding: 2px 5px;">${subValue}</td></tr>`;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        let titleOp = auraObj.operacion === 'CONSULTAR_DATO' ? 'Extracción de Datos Clínicos' : auraObj.operacion.replace('REGISTRAR_', 'Preregistro de ');
+
+                        let buttonsHTML = '';
+                        if (auraObj.operacion !== 'CONSULTAR_DATO') {
+                            buttonsHTML = `
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end border-top pt-2">
+                                <button class="btn btn-sm btn-outline-secondary py-0" onclick="alert('Operación cancelada')">Descartar</button>
+                                <button class="btn btn-sm btn-info text-white py-0" onclick="alert('Funcionalidad de autollenado en desarrollo.')">Confirmar Acción</button>
+                            </div>`;
+                        }
+
+                        htmlCardComplemento = `
+                        <div class="card border-info shadow-none mt-2" style="background-color: #f0fdfc;">
+                            <div class="card-body p-2">
+                                <h6 class="card-title text-info mb-1 fw-bold" style="font-size: 0.85rem;"><i class="bi bi-robot"></i> ${titleOp}</h6>
+                                <div class="mb-2">${badgetsHTML}</div>
+                                <table class="table table-sm table-borderless mb-2">
+                                    <tbody>${dataExtractedHTML}</tbody>
+                                </table>
+                                ${buttonsHTML}
+                            </div>
+                        </div>`;
+                    }
+                } catch (e) {
+                    botMsgParsed = data.respuesta.replace(/\\n/g, '<br>');
+                }
+
                 const iaMsg = `
                 <div class="clearfix">
                     <div class="wa-bubble-in shadow-sm">
-                        <p class="mb-0 text-dark" style="font-size: 0.95rem;">${botMsgParsed}</p>
-                        <span class="wa-time">${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}</span>
+                        <p class="mb-0 text-dark" style="font-size: 0.95rem;">${botMsgParsed.replace(/\\n/g, '<br>')}</p>
+                        ${htmlCardComplemento}
+                        <span class="wa-time mt-1 d-block text-end">${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}</span>
                     </div>
                 </div>`;
                 chatArea.insertAdjacentHTML('beforeend', iaMsg);
@@ -205,10 +270,29 @@ document.addEventListener('DOMContentLoaded', function () {
                                 const bubbleClass = isMedico ? 'wa-bubble-out' : 'wa-bubble-in';
                                 const ticks = isMedico ? ' <i class="bi bi-check-all text-info" style="font-size: 1rem;"></i>' : '';
 
+                                let textoAMostrar = m.texto;
+                                if (!isMedico) {
+                                    try {
+                                        // Intentamos detectar si la IA nos dejó un JSON
+                                        let cleanRes = m.texto.replace(/```json/gi, '').replace(/```/g, '').trim();
+                                        const auraObj = JSON.parse(cleanRes);
+                                        if (auraObj.mensaje_aura) {
+                                            textoAMostrar = auraObj.mensaje_aura;
+
+                                            // Opción para ver detalles en historiales pasados (Si es registro, etc)
+                                            if (auraObj.operacion && auraObj.operacion !== 'CONVERSACION' && auraObj.operacion !== 'CONSULTAR_DATO') {
+                                                textoAMostrar += `<br><small class="text-primary mt-2 d-block"><i class="bi bi-file-earmark-text"></i> Pre-Registro de ${auraObj.operacion.replace('REGISTRAR_', '')} generado.</small>`;
+                                            }
+                                        }
+                                    } catch (e) {
+                                        // Era texto normal (Fallback)
+                                    }
+                                }
+
                                 const mHTML = `
                                 <div class="clearfix">
                                     <div class="${bubbleClass} shadow-sm">
-                                        <p class="mb-0 text-dark" style="font-size: 0.95rem;">${m.texto.replace(/\\n/g, '<br>')}</p>
+                                        <p class="mb-0 text-dark" style="font-size: 0.95rem;">${textoAMostrar.replace(/\\n/g, '<br>')}</p>
                                         <span class="wa-time">${m.fecha}${ticks}</span>
                                     </div>
                                 </div>`;
