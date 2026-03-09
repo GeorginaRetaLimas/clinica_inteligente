@@ -81,8 +81,11 @@ endif; ?>
                     </div>
                     
                     <!-- header icons right -->
-                    <div class="position-absolute end-0 me-3">
-                        <i class="bi bi-three-dots-vertical text-white fs-5" style="cursor: pointer;"></i>
+                    <div class="position-absolute end-0 me-3 dropdown">
+                        <i class="bi bi-three-dots-vertical text-white fs-5" style="cursor: pointer;" data-bs-toggle="dropdown" aria-expanded="false"></i>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                            <li><button class="dropdown-item text-danger" id="btnClearChat"><i class="bi bi-trash me-2"></i> Limpiar Chat</button></li>
+                        </ul>
                     </div>
                 </div>
 

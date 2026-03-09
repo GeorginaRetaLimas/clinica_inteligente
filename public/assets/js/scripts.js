@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const chatArea = document.getElementById('chatArea');
     const btnMic = document.getElementById('btnMic');
     const btnSendText = document.getElementById('btnSendText');
+    const btnClearChat = document.getElementById('btnClearChat');
     let current_conversacion_id = null;
 
     if (!form || !input || !chatArea) return; // Solo ejecutar si estamos en la vista de chat
@@ -243,6 +244,37 @@ document.addEventListener('DOMContentLoaded', function () {
                     contact.style.display = 'none';
                 }
             });
+        });
+    }
+
+    // Limpiar Chat Lógicamente
+    if (btnClearChat) {
+        btnClearChat.addEventListener('click', async function () {
+            if (!current_conversacion_id) return;
+
+            if (confirm("¿Estás seguro de que deseas limpiar la conversación actual? Los mensajes se ocultarán de la pantalla.")) {
+                try {
+                    const res = await fetch('/clinica_app/api/clear_chat.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ conversacion_id: current_conversacion_id })
+                    });
+                    const data = await res.json();
+
+                    if (data.status === 'success') {
+                        chatArea.innerHTML = `
+                        <div class="clearfix">
+                            <div class="wa-bubble-in shadow-sm text-center bg-light">
+                                <small class="text-muted"><i class="bi bi-info-circle"></i> Chat limpiado.</small>
+                            </div>
+                        </div>`;
+                    } else {
+                        alert("Error al limpiar chat: " + data.mensaje);
+                    }
+                } catch (e) {
+                    alert("Error de red intentando limpiar el chat.");
+                }
+            }
         });
     }
 });

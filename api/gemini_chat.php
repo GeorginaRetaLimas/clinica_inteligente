@@ -40,14 +40,50 @@ if (empty($apiKey)) {
 
 $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=" . $apiKey;
 
-$prompt = "Eres un Asistente Clínico Inteligente apoyando a un médico. Evalúa o estructura la siguiente nota clínica o responde de manera concisa y profesional. La nota es:\n\n" . $texto_clinico;
+// Recuperar contexto del paciente si la conversación está atada a uno
+$contexto_paciente = null;
+$stmt_conv = $pdo->prepare("SELECT paciente_id FROM conversaciones_aura WHERE id = ? AND tipo = 'paciente'");
+$stmt_conv->execute([$conversacion_id]);
+$pid = $stmt_conv->fetchColumn();
+
+if ($pid) {
+    // Traer datos crudos del paciente
+    $stmt_pac = $pdo->prepare("SELECT * FROM pacientes WHERE id = ?");
+    $stmt_pac->execute([$pid]);
+    $datos_pac = $stmt_pac->fetch(PDO::FETCH_ASSOC);
+
+    // Traer últimos 3 expedientes relevantes
+    $stmt_exp = $pdo->prepare("SELECT fecha_consulta, motivo_consulta, diagnostico, tratamiento, medicamentos FROM expedientes WHERE paciente_id = ? AND activo = 1 ORDER BY fecha_consulta DESC LIMIT 3");
+    $stmt_exp->execute([$pid]);
+    $expedientes = $stmt_exp->fetchAll(PDO::FETCH_ASSOC);
+
+    $contexto_paciente = [
+        'perfil' => $datos_pac,
+        'ultimos_expedientes' => $expedientes
+    ];
+}
+
+$contexto_actual = json_encode([
+    'medico_id' => $_SESSION['medico_id'],
+    'paciente_activo' => $contexto_paciente,
+    'fecha_hora_actual' => date('Y-m-d H:i:s')
+], JSON_UNESCAPED_UNICODE);
+
+$system_prompt = file_get_contents('../prompt_sistema_aura.txt');
+if (!$system_prompt)
+    $system_prompt = "Eres un asistente médico inteligente. Responde siempre en JSON.";
+
+$texto_final_sistema = $system_prompt . "\n\n=== CONTEXTO ACTUAL ===\n" . $contexto_actual;
 
 $data = [
     "contents" => [
         [
-            "parts" => [
-                ["text" => $prompt]
-            ]
+            "role" => "model",
+            "parts" => [["text" => $texto_final_sistema]]
+        ],
+        [
+            "role" => "user",
+            "parts" => [["text" => $texto_clinico]]
         ]
     ]
 ];

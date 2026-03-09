@@ -39,7 +39,7 @@ try {
     }
 
     // 2. Traer mensajes y desencriptarlos
-    $stmt = $pdo->prepare("SELECT id, remitente, contenido_cifrado, iv_hex, created_at FROM mensajes_aura WHERE conversacion_id = ? ORDER BY id ASC");
+    $stmt = $pdo->prepare("SELECT id, remitente, contenido_cifrado, iv_hex, created_at FROM mensajes_aura WHERE conversacion_id = ? AND activo = 1 ORDER BY id ASC");
     $stmt->execute([$conv_id]);
     $mensajes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
