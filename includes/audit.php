@@ -59,7 +59,7 @@ function registrarAuditoria($pdo, $medico_id, $tabla, $registro_id, $accion, $da
 function encriptarMensajeAURA($texto)
 {
     // Tomamos la clave de entorno guardada en .env
-    $key = $_ENV['CHAT_ENCRYPT_KEY'] ?? 'fallback_aura_key_if_missing_123';
+    $key = $_ENV['CHAT_ENCRYPT_KEY'] ?? '';
 
     // Vector de Inicialización seguro y único
     $iv = random_bytes(16);
@@ -83,7 +83,7 @@ function desencriptarMensajeAURA($cifrado, $iv_hex)
 {
     if (!$cifrado)
         return "";
-    $key = $_ENV['CHAT_ENCRYPT_KEY'] ?? 'fallback_aura_key_if_missing_123';
+    $key = $_ENV['CHAT_ENCRYPT_KEY'] ?? '';
     $iv = hex2bin($iv_hex);
     return openssl_decrypt($cifrado, 'AES-256-CBC', $key, 0, $iv);
 }
