@@ -94,7 +94,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     }
 }
 
-$medicos = $pdo->query("SELECT m.*, r.nombre as nombre_rol FROM medicos m JOIN roles r ON m.rol_id = r.id WHERE m.activo = 1")->fetchAll();
+// El Administrador debe ver a todos los médicos/administradores para tener control
+$medicos = $pdo->query("SELECT m.*, r.nombre as nombre_rol FROM medicos m JOIN roles r ON m.rol_id = r.id")->fetchAll();
 $roles = $pdo->query("SELECT * FROM roles")->fetchAll();
 
 require_once '../includes/header.php';
@@ -138,7 +139,7 @@ endif; ?>
                         <th>ID</th>
                         <th>Rol</th>
                         <th>Nombre</th>
-                        <th>Cédula</th>
+                        <th>Cédula Prof.</th>
                         <th>Email / Usuario</th>
                         <th>Teléfono</th>
                         <th class="text-end">Acciones</th>
@@ -146,17 +147,21 @@ endif; ?>
                 </thead>
                 <tbody>
                     <?php foreach ($medicos as $m): ?>
-                        <tr>
+                        <tr class="<?php echo($m['activo'] == 0) ? 'opacity-50 bg-light' : ''; ?>">
                             <td><?php echo $m['id']; ?></td>
                             <td><span class="badge bg-<?php echo($m['rol_id'] == 1) ? 'danger' : 'primary'; ?>"><?php echo strtoupper($m['nombre_rol']); ?></span></td>
-                            <td class="fw-semibold"><?php echo htmlspecialchars($m['nombre'] . ' ' . $m['apellido_paterno']); ?></td>
-                            <td><?php echo htmlspecialchars($m['cedula_profesional'] ?? 'N/A'); ?></td>
+                            <td class="fw-semibold">
+                                <?php echo htmlspecialchars($m['nombre'] . ' ' . $m['apellido_paterno'] . ' ' . $m['apellido_materno']); ?>
+                                <?php if ($m['activo'] == 0): ?><br><span class="badge bg-danger">Inactivo / Baja</span><?php
+    endif; ?>
+                            </td>
+                            <td><span class="text-secondary font-monospace"><?php echo htmlspecialchars($m['cedula_profesional'] ?? 'N/A'); ?></span></td>
                             <td><?php echo htmlspecialchars($m['email']); ?></td>
-                            <td><?php echo htmlspecialchars($m['telefono']); ?></td>
+                            <td><?php echo htmlspecialchars($m['telefono'] ?? '-'); ?></td>
                             <td class="text-end">
                                 <button class="btn btn-sm btn-outline-primary" onclick="editMedico(<?php echo htmlspecialchars(json_encode($m)); ?>)"><i class="bi bi-pencil"></i></button>
-                                <?php if ($m['id'] != $admin_id): ?>
-                                <form method="POST" action="" style="display:inline-block;" onsubmit="return confirm('¿Dar de baja a este usuario?');">
+                                <?php if ($m['id'] != $admin_id && $m['activo'] == 1): ?>
+                                <form method="POST" action="" style="display:inline-block;" onsubmit="return confirm('¿Dar de baja a este usuario? Ya no podrá acceder al sistema.');">
                                     <input type="hidden" name="action" value="delete">
                                     <input type="hidden" name="id" value="<?php echo $m['id']; ?>">
                                     <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
@@ -183,19 +188,24 @@ endforeach; ?>
       </div>
       <div class="modal-body">
         <input type="hidden" name="action" value="add">
-        <div class="mb-3">
-            <label>Rol</label>
-            <select name="rol_id" class="form-select" required>
-                <?php foreach ($roles as $r): ?>
-                    <option value="<?php echo $r['id']; ?>" <?php echo($r['id'] == 2) ? 'selected' : ''; ?>><?php echo strtoupper($r['nombre']); ?></option>
-                <?php
+        <div class="row g-3">
+            <div class="col-md-12">
+                <label>Rol</label>
+                <select name="rol_id" class="form-select" required>
+                    <?php foreach ($roles as $r): ?>
+                        <option value="<?php echo $r['id']; ?>" <?php echo($r['id'] == 2) ? 'selected' : ''; ?>><?php echo strtoupper($r['nombre']); ?></option>
+                    <?php
 endforeach; ?>
-            </select>
+                </select>
+            </div>
+            <div class="col-md-4"><label>Nombre</label><input type="text" name="nombre" class="form-control" required></div>
+            <div class="col-md-4"><label>Apellido Paterno</label><input type="text" name="apellido_paterno" class="form-control" required></div>
+            <div class="col-md-4"><label>Apellido Materno</label><input type="text" name="apellido_materno" class="form-control"></div>
+            <div class="col-md-6"><label>Cédula Profesional</label><input type="text" name="cedula_profesional" class="form-control" maxlength="20"></div>
+            <div class="col-md-6"><label>Teléfono</label><input type="text" name="telefono" class="form-control" maxlength="15"></div>
+            <div class="col-md-6"><label>Email (Login)</label><input type="text" name="email" class="form-control" required></div>
+            <div class="col-md-6"><label>Contraseña</label><input type="password" name="password" class="form-control" required></div>
         </div>
-        <div class="mb-3"><label>Nombre</label><input type="text" name="nombre" class="form-control" required></div>
-        <div class="mb-3"><label>Apellido Paterno</label><input type="text" name="apellido_paterno" class="form-control" required></div>
-        <div class="mb-3"><label>Email (Login)</label><input type="text" name="email" class="form-control" required></div>
-        <div class="mb-3"><label>Contraseña</label><input type="password" name="password" class="form-control" required></div>
       </div>
       <div class="modal-footer">
         <button type="submit" class="btn btn-info text-white">Guardar</button>
@@ -215,19 +225,24 @@ endforeach; ?>
       <div class="modal-body">
         <input type="hidden" name="action" value="edit">
         <input type="hidden" name="id" id="edit_id">
-        <div class="mb-3">
-            <label>Rol</label>
-            <select name="rol_id" id="edit_rol" class="form-select" required>
-                <?php foreach ($roles as $r): ?>
-                    <option value="<?php echo $r['id']; ?>"><?php echo strtoupper($r['nombre']); ?></option>
-                <?php
+        <div class="row g-3">
+            <div class="col-md-12">
+                <label>Rol</label>
+                <select name="rol_id" id="edit_rol" class="form-select" required>
+                    <?php foreach ($roles as $r): ?>
+                        <option value="<?php echo $r['id']; ?>"><?php echo strtoupper($r['nombre']); ?></option>
+                    <?php
 endforeach; ?>
-            </select>
+                </select>
+            </div>
+            <div class="col-md-4"><label>Nombre</label><input type="text" name="nombre" id="edit_nombre" class="form-control" required></div>
+            <div class="col-md-4"><label>Apellido Paterno</label><input type="text" name="apellido_paterno" id="edit_ap" class="form-control" required></div>
+            <div class="col-md-4"><label>Apellido Materno</label><input type="text" name="apellido_materno" id="edit_am" class="form-control"></div>
+            <div class="col-md-6"><label>Cédula Profesional</label><input type="text" name="cedula_profesional" id="edit_cedula" class="form-control" maxlength="20"></div>
+            <div class="col-md-6"><label>Teléfono</label><input type="text" name="telefono" id="edit_telefono" class="form-control" maxlength="15"></div>
+            <div class="col-md-6"><label>Email</label><input type="text" name="email" id="edit_email" class="form-control" required></div>
+            <div class="col-md-6"><label>Nueva Contraseña (Opcional)</label><input type="password" name="password" class="form-control" placeholder="Dejar en blanco para conservar"></div>
         </div>
-        <div class="mb-3"><label>Nombre</label><input type="text" name="nombre" id="edit_nombre" class="form-control" required></div>
-        <div class="mb-3"><label>Apellido Paterno</label><input type="text" name="apellido_paterno" id="edit_ap" class="form-control" required></div>
-        <div class="mb-3"><label>Email</label><input type="text" name="email" id="edit_email" class="form-control" required></div>
-        <div class="mb-3"><label>Nueva Contraseña (Opcional)</label><input type="password" name="password" class="form-control" placeholder="Dejar en blanco para conservar"></div>
       </div>
       <div class="modal-footer">
         <button type="submit" class="btn btn-primary text-white">Actualizar</button>
@@ -242,6 +257,9 @@ function editMedico(m) {
     document.getElementById('edit_rol').value = m.rol_id;
     document.getElementById('edit_nombre').value = m.nombre;
     document.getElementById('edit_ap').value = m.apellido_paterno;
+    document.getElementById('edit_am').value = m.apellido_materno;
+    document.getElementById('edit_cedula').value = m.cedula_profesional;
+    document.getElementById('edit_telefono').value = m.telefono;
     document.getElementById('edit_email').value = m.email;
     new bootstrap.Modal(document.getElementById('modalEdit')).show();
 }

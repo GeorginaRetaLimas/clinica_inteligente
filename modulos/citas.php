@@ -16,11 +16,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $paciente_id = (int)$_POST['paciente_id'];
             $fecha = $_POST['fecha_hora'];
             $motivo = $_POST['motivo'];
+            $duracion = (int)($_POST['duracion_min'] ?? 30);
             $medico_id_cita = $medico_id;
 
-            $sql = "INSERT INTO citas (paciente_id, medico_id, fecha_hora, motivo) VALUES (?, ?, ?, ?)";
+            $sql = "INSERT INTO citas (paciente_id, medico_id, fecha_hora, duracion_min, motivo) VALUES (?, ?, ?, ?, ?)";
             $stmt = $pdo->prepare($sql);
-            $stmt->execute([$paciente_id, $medico_id_cita, $fecha, $motivo]);
+            $stmt->execute([$paciente_id, $medico_id_cita, $fecha, $duracion, $motivo]);
             $nuevo_id = $pdo->lastInsertId();
 
             $datos_despues = ['id' => $nuevo_id, 'paciente_id' => $paciente_id, 'fecha' => $fecha, 'motivo' => $motivo];
@@ -34,15 +35,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $estado = $_POST['estado'];
             $fecha = $_POST['fecha_hora'];
             $motivo = $_POST['motivo'];
+            $duracion = (int)($_POST['duracion_min'] ?? 30);
+            $notas_cancelacion = $_POST['notas_cancelacion'] ?? null;
 
             $stmt = $pdo->prepare("SELECT * FROM citas WHERE id = ?");
             $stmt->execute([$id]);
             $datos_antes = $stmt->fetch();
 
             if ($datos_antes) {
-                $pdo->prepare("UPDATE citas SET fecha_hora = ?, motivo = ?, estado = ? WHERE id = ?")->execute([$fecha, $motivo, $estado, $id]);
+                $pdo->prepare("UPDATE citas SET fecha_hora = ?, duracion_min = ?, motivo = ?, estado = ?, notas_cancelacion = ? WHERE id = ?")
+                    ->execute([$fecha, $duracion, $motivo, $estado, $notas_cancelacion, $id]);
                 $datos_despues = $datos_antes;
                 $datos_despues['fecha_hora'] = $fecha;
+                $datos_despues['duracion_min'] = $duracion;
                 $datos_despues['motivo'] = $motivo;
                 $datos_despues['estado'] = $estado;
                 registrarAuditoria($pdo, $medico_id, 'citas', $id, 'UPDATE', $datos_antes, $datos_despues);
@@ -78,8 +83,8 @@ if ($isAdmin) {
                  ORDER BY c.fecha_hora DESC";
     $citas = $pdo->query($sqlCitas)->fetchAll();
 
-    // Para modal
-    $pacientes = $pdo->query("SELECT id, nombre, apellido_paterno FROM pacientes")->fetchAll();
+    // Para modal (SOLO PACIENTES ACTIVOS)
+    $pacientes = $pdo->query("SELECT id, nombre, apellido_paterno FROM pacientes WHERE activo = 1")->fetchAll();
 }
 else {
     $sqlCitas = "SELECT c.*, p.nombre as p_nombre, p.apellido_paterno as p_ap 
@@ -91,8 +96,8 @@ else {
     $stmt->execute([$medico_id]);
     $citas = $stmt->fetchAll();
 
-    // Para modal
-    $stmt = $pdo->prepare("SELECT p.id, p.nombre, p.apellido_paterno FROM pacientes p INNER JOIN paciente_medico pm ON p.id = pm.paciente_id WHERE pm.medico_id = ?");
+    // Para modal (SOLO PACIENTES ACTIVOS)
+    $stmt = $pdo->prepare("SELECT p.id, p.nombre, p.apellido_paterno FROM pacientes p INNER JOIN paciente_medico pm ON p.id = pm.paciente_id WHERE pm.medico_id = ? AND p.activo = 1");
     $stmt->execute([$medico_id]);
     $pacientes = $stmt->fetchAll();
 }
@@ -127,6 +132,7 @@ endif; ?>
                 <thead class="table-light">
                     <tr>
                         <th>Fecha y Hora</th>
+                        <th>Duración</th>
                         <th>Paciente</th>
                         <?php if ($isAdmin): ?><th>Médico</th><?php
 endif; ?>
@@ -147,14 +153,21 @@ endif; ?>
         ];
         $c_badge = $badge[$c['estado']] ?? 'bg-light text-dark';
 ?>
-                            <tr>
+                            <tr class="<?php echo($c['estado'] === 'cancelada') ? 'opacity-50 bg-light' : ''; ?>">
                                 <td><i class="bi bi-clock"></i> <?php echo date('d/m/Y H:i', strtotime($c['fecha_hora'])); ?></td>
+                                <td><?php echo $c['duracion_min']; ?> min</td>
                                 <td class="fw-semibold"><?php echo htmlspecialchars($c['p_nombre'] . ' ' . $c['p_ap']); ?></td>
                                 <?php if ($isAdmin): ?>
                                     <td><?php echo htmlspecialchars($c['m_nombre'] . ' ' . $c['m_ap']); ?></td>
                                 <?php
         endif; ?>
-                                <td><span class="text-truncate d-inline-block" style="max-width: 150px;"><?php echo htmlspecialchars($c['motivo'] ?? '-'); ?></span></td>
+                                <td>
+                                    <span class="text-truncate d-inline-block" style="max-width: 150px;"><?php echo htmlspecialchars($c['motivo'] ?? '-'); ?></span>
+                                    <?php if ($c['estado'] === 'cancelada' && !empty($c['notas_cancelacion'])): ?>
+                                        <br><small class="text-danger fw-bold"><i class="bi bi-info-circle"></i> <?php echo htmlspecialchars($c['notas_cancelacion']); ?></small>
+                                    <?php
+        endif; ?>
+                                </td>
                                 <td><span class="badge rounded-pill <?php echo $c_badge; ?>"><?php echo ucfirst(str_replace('_', ' ', $c['estado'])); ?></span></td>
                                 <td class="text-end">
                                     <?php if ($c['estado'] === 'pendiente' || $c['estado'] === 'confirmada'): ?>
@@ -206,9 +219,13 @@ endif; ?>
 endforeach; ?>
                 </select>
             </div>
-            <div class="col-md-12">
+            <div class="col-md-8">
                 <label class="form-label">Fecha y Hora</label>
                 <input type="datetime-local" class="form-control" name="fecha_hora" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Duración (min)</label>
+                <input type="number" class="form-control" name="duracion_min" value="30" min="5" step="5" required>
             </div>
             <div class="col-md-12">
                 <label class="form-label">Motivo (Breve)</label>
@@ -250,8 +267,16 @@ endforeach; ?>
             <input type="datetime-local" name="fecha_hora" id="edit_fecha" class="form-control" required>
         </div>
         <div class="mb-3">
+            <label>Duración (min)</label>
+            <input type="number" name="duracion_min" id="edit_duracion" class="form-control" min="5" step="5" required>
+        </div>
+        <div class="mb-3">
             <label>Motivo</label>
             <input type="text" name="motivo" id="edit_motivo" class="form-control">
+        </div>
+        <div class="mb-3">
+            <label class="text-danger fw-bold">Razón de Cancelación (Opcional)</label>
+            <input type="text" name="notas_cancelacion" id="edit_notas" class="form-control" placeholder="Ej. El paciente llamó para posponer...">
         </div>
       </div>
       <div class="modal-footer">
@@ -266,7 +291,9 @@ function editCita(c) {
     document.getElementById('edit_id').value = c.id;
     document.getElementById('edit_estado').value = c.estado;
     document.getElementById('edit_fecha').value = c.fecha_hora;
+    document.getElementById('edit_duracion').value = c.duracion_min;
     document.getElementById('edit_motivo').value = c.motivo;
+    document.getElementById('edit_notas').value = c.notas_cancelacion;
     new bootstrap.Modal(document.getElementById('modalEditCita')).show();
 }
 </script>

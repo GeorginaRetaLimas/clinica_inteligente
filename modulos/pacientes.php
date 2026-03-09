@@ -18,21 +18,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $am = $_POST['apellido_materno'] ?? '';
         $fecha_nacimiento = $_POST['fecha_nacimiento'] ?? '';
         $sexo = $_POST['sexo'] ?? '';
+        $curp = mb_strtoupper($_POST['curp'] ?? '');
+        $email = $_POST['email'] ?? '';
+        $direccion = $_POST['direccion'] ?? '';
+        $alergias = $_POST['alergias'] ?? '';
         $telefono = $_POST['telefono'] ?? '';
         $tipo_sangre_id = !empty($_POST['tipo_sangre']) ? (int)$_POST['tipo_sangre'] : null;
 
         if ($action === 'add') {
-            $sql = "INSERT INTO pacientes (nombre, apellido_paterno, apellido_materno, fecha_nacimiento, sexo, telefono, tipo_sangre_id) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?)";
+            $sql = "INSERT INTO pacientes (nombre, apellido_paterno, apellido_materno, fecha_nacimiento, sexo, curp, email, direccion, telefono, tipo_sangre_id, alergias) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $stmt = $pdo->prepare($sql);
-            $stmt->execute([$nombre, $ap, $am, $fecha_nacimiento, $sexo, $telefono, $tipo_sangre_id]);
+            $stmt->execute([$nombre, $ap, $am, $fecha_nacimiento, $sexo, $curp, $email, $direccion, $telefono, $tipo_sangre_id, $alergias]);
             $nuevo_id = $pdo->lastInsertId();
 
             if (!$isAdmin) {
                 $pdo->prepare("INSERT INTO paciente_medico (paciente_id, medico_id) VALUES (?, ?)")->execute([$nuevo_id, $medico_id]);
             }
 
-            $datos_despues = ['id' => $nuevo_id, 'nombre' => $nombre, 'apellido_paterno' => $ap, 'fecha_nacimiento' => $fecha_nacimiento, 'sexo' => $sexo, 'telefono' => $telefono, 'tipo_sangre_id' => $tipo_sangre_id];
+            $datos_despues = ['id' => $nuevo_id, 'nombre' => $nombre, 'apellido_paterno' => $ap, 'curp' => $curp];
             registrarAuditoria($pdo, $medico_id, 'pacientes', $nuevo_id, 'INSERT', null, $datos_despues);
 
             header('Location: pacientes.php?msg=added');
@@ -47,15 +51,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $datos_antes = $stmt->fetch();
 
             if ($datos_antes) {
-                $sql = "UPDATE pacientes SET nombre = ?, apellido_paterno = ?, apellido_materno = ?, fecha_nacimiento = ?, sexo = ?, telefono = ?, tipo_sangre_id = ? WHERE id = ?";
+                $sql = "UPDATE pacientes SET nombre = ?, apellido_paterno = ?, apellido_materno = ?, fecha_nacimiento = ?, sexo = ?, curp = ?, email = ?, direccion = ?, telefono = ?, tipo_sangre_id = ?, alergias = ? WHERE id = ?";
                 $stmt = $pdo->prepare($sql);
-                $stmt->execute([$nombre, $ap, $am, $fecha_nacimiento, $sexo, $telefono, $tipo_sangre_id, $id]);
+                $stmt->execute([$nombre, $ap, $am, $fecha_nacimiento, $sexo, $curp, $email, $direccion, $telefono, $tipo_sangre_id, $alergias, $id]);
 
                 $datos_despues = $datos_antes;
                 $datos_despues['nombre'] = $nombre;
-                $datos_despues['apellido_paterno'] = $ap;
-                $datos_despues['apellido_materno'] = $am;
-                $datos_despues['fecha_nacimiento'] = $fecha_nacimiento;
+                $datos_despues['curp'] = $curp;
+                $datos_despues['alergias'] = $alergias;
 
                 registrarAuditoria($pdo, $medico_id, 'pacientes', $id, 'UPDATE', $datos_antes, $datos_despues);
             }
@@ -90,10 +93,12 @@ $tipos_sangre = $pdo->query($sqlSangre)->fetchAll();
 
 // Fetch Pacientes
 if ($isAdmin) {
-    $sqlPacientes = "SELECT p.*, t.tipo as tipo_sangre FROM pacientes p LEFT JOIN tipos_sangre t ON p.tipo_sangre_id = t.id WHERE p.activo = 1";
+    // Admin ve todos, incluyendo los inactivos (activo = 0) para control interno
+    $sqlPacientes = "SELECT p.*, t.tipo as tipo_sangre FROM pacientes p LEFT JOIN tipos_sangre t ON p.tipo_sangre_id = t.id";
     $pacientes = $pdo->query($sqlPacientes)->fetchAll();
 }
 else {
+    // Si no es admin, NO ve los pacientes borrados lógicamente (activo=0)
     $sqlPacientes = "SELECT p.*, t.tipo as tipo_sangre FROM pacientes p 
                      INNER JOIN paciente_medico pm ON p.id = pm.paciente_id 
                      LEFT JOIN tipos_sangre t ON p.tipo_sangre_id = t.id 
@@ -135,8 +140,8 @@ endif; ?>
                         <th>ID</th>
                         <th>Nombre Completo</th>
                         <th>Edad</th>
-                        <th>Sexo</th>
-                        <th>G. Sanguíneo</th>
+                        <th>CURP</th>
+                        <th>Sexo / GS</th>
                         <th>Teléfono</th>
                         <th class="text-end">Acciones</th>
                     </tr>
@@ -146,22 +151,30 @@ endif; ?>
                         <?php foreach ($pacientes as $p):
         $edad = date_diff(date_create($p['fecha_nacimiento']), date_create('now'))->y;
 ?>
-                            <tr>
+                            <tr class="<?php echo($p['activo'] == 0) ? 'opacity-50 bg-light' : ''; ?>">
                                 <td><?php echo $p['id']; ?></td>
                                 <td class="fw-semibold">
                                     <?php echo htmlspecialchars($p['nombre'] . ' ' . $p['apellido_paterno'] . ' ' . $p['apellido_materno']); ?>
+                                    <?php if ($p['activo'] == 0): ?><br><span class="badge bg-danger">Inactivo / Baja</span><?php
+        endif; ?>
                                 </td>
                                 <td><?php echo $edad; ?> años</td>
-                                <td><?php echo htmlspecialchars($p['sexo']); ?></td>
-                                <td><span class="badge bg-secondary"><?php echo htmlspecialchars($p['tipo_sangre'] ?? 'N/D'); ?></span></td>
+                                <td><span class="text-secondary" style="font-family: monospace;"><?php echo htmlspecialchars($p['curp'] ?? '-'); ?></span></td>
+                                <td>
+                                    <?php echo htmlspecialchars($p['sexo']); ?> / 
+                                    <span class="badge bg-secondary"><?php echo htmlspecialchars($p['tipo_sangre'] ?? 'N/D'); ?></span>
+                                </td>
                                 <td><?php echo htmlspecialchars($p['telefono']); ?></td>
                                 <td class="text-end">
                                     <button class="btn btn-sm btn-outline-primary" onclick="editPaciente(<?php echo htmlspecialchars(json_encode($p)); ?>)"><i class="bi bi-pencil"></i></button>
-                                    <form method="POST" action="" style="display:inline-block;" onsubmit="return confirm('¿Está seguro de eliminar lógicamente este paciente?');">
+                                    <?php if ($p['activo'] == 1): ?>
+                                    <form method="POST" action="" style="display:inline-block;" onsubmit="return confirm('¿Está seguro de eliminar lógicamente este paciente? Ningún médico lo verá activo en su app.');">
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="id" value="<?php echo $p['id']; ?>">
                                         <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                                     </form>
+                                    <?php
+        endif; ?>
                                 </td>
                             </tr>
                         <?php
@@ -223,9 +236,25 @@ endif; ?>
 endforeach; ?>
                 </select>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <label class="form-label">Teléfono</label>
                 <input type="text" class="form-control" name="telefono">
+            </div>
+            <div class="col-md-8">
+                <label class="form-label">Correo Electrónico</label>
+                <input type="email" class="form-control" name="email">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">CURP</label>
+                <input type="text" class="form-control text-uppercase" name="curp" maxlength="18">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Alergias Conocidas</label>
+                <input type="text" class="form-control" name="alergias" placeholder="Ej. Penicilina, Ninguna...">
+            </div>
+            <div class="col-md-12">
+                <label class="form-label">Dirección</label>
+                <textarea class="form-control" name="direccion" rows="2"></textarea>
             </div>
         </div>
       </div>
@@ -283,9 +312,25 @@ endforeach; ?>
 endforeach; ?>
                 </select>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <label class="form-label">Teléfono</label>
                 <input type="text" class="form-control" name="telefono" id="edit_tel">
+            </div>
+            <div class="col-md-8">
+                <label class="form-label">Correo Electrónico</label>
+                <input type="email" class="form-control" name="email" id="edit_email">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">CURP</label>
+                <input type="text" class="form-control text-uppercase" name="curp" id="edit_curp" maxlength="18">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Alergias Conocidas</label>
+                <input type="text" class="form-control" name="alergias" id="edit_alergias">
+            </div>
+            <div class="col-md-12">
+                <label class="form-label">Dirección</label>
+                <textarea class="form-control" name="direccion" id="edit_direccion" rows="2"></textarea>
             </div>
         </div>
       </div>
@@ -307,6 +352,10 @@ function editPaciente(p) {
     document.getElementById('edit_sexo').value = p.sexo;
     document.getElementById('edit_sangre').value = p.tipo_sangre_id;
     document.getElementById('edit_tel').value = p.telefono;
+    document.getElementById('edit_email').value = p.email;
+    document.getElementById('edit_curp').value = p.curp;
+    document.getElementById('edit_alergias').value = p.alergias;
+    document.getElementById('edit_direccion').value = p.direccion;
     new bootstrap.Modal(document.getElementById('modalEditPaciente')).show();
 }
 </script>

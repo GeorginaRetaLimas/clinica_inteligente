@@ -8,10 +8,10 @@ $medico_id = $_SESSION['medico_id'];
 $isAdmin = ($_SESSION['rol_id'] == 1);
 
 if ($isAdmin) {
-    $pacientes = $pdo->query("SELECT id, nombre, apellido_paterno FROM pacientes")->fetchAll();
+    $pacientes = $pdo->query("SELECT id, nombre, apellido_paterno FROM pacientes WHERE activo = 1")->fetchAll();
 }
 else {
-    $stmt = $pdo->prepare("SELECT p.id, p.nombre, p.apellido_paterno FROM pacientes p INNER JOIN paciente_medico pm ON p.id = pm.paciente_id WHERE pm.medico_id = ?");
+    $stmt = $pdo->prepare("SELECT p.id, p.nombre, p.apellido_paterno FROM pacientes p INNER JOIN paciente_medico pm ON p.id = pm.paciente_id WHERE pm.medico_id = ? AND p.activo = 1");
     $stmt->execute([$medico_id]);
     $pacientes = $stmt->fetchAll();
 }

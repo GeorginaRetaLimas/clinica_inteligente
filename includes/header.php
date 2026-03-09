@@ -32,6 +32,14 @@ if (session_status() === PHP_SESSION_NONE) {
                 <li class="nav-item">
                     <a class="nav-link" href="/clinica_app/index.php">Inicio</a>
                 </li>
+                <?php if (isset($_SESSION['rol_id']) && $_SESSION['rol_id'] == 1): ?>
+                <li class="nav-item">
+                    <a class="nav-link fw-semibold text-primary" href="/clinica_app/modulos/medicos.php">
+                        <i class="bi bi-people-fill"></i> Médicos
+                    </a>
+                </li>
+                <?php
+    endif; ?>
                 <li class="nav-item">
                     <a class="nav-link" href="/clinica_app/modulos/pacientes.php">Pacientes</a>
                 </li>
