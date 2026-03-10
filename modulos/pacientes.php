@@ -124,10 +124,13 @@ require_once '../includes/header.php';
 </div>
 
 <?php if (isset($_GET['msg']) && $_GET['msg'] === 'added'): ?>
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        Paciente agregado exitosamente.
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if(typeof showAuraModal === 'function') {
+                showAuraModal('Operación Exitosa', 'Paciente agregado exitosamente.', 'success');
+            }
+        });
+    </script>
 <?php
 endif; ?>
 
@@ -168,10 +171,10 @@ endif; ?>
                                 <td class="text-end">
                                     <button class="btn btn-sm btn-outline-primary" onclick="editPaciente(<?php echo htmlspecialchars(json_encode($p)); ?>)"><i class="bi bi-pencil"></i></button>
                                     <?php if ($p['activo'] == 1): ?>
-                                    <form method="POST" action="" style="display:inline-block;" onsubmit="return confirm('¿Está seguro de eliminar lógicamente este paciente? Ningún médico lo verá activo en su app.');">
+                                    <form method="POST" action="" style="display:inline-block;">
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="id" value="<?php echo $p['id']; ?>">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="showAuraConfirm('Eliminar Paciente', '¿Está seguro de eliminar lógicamente este paciente? Ningún médico lo verá activo en su app.', this.closest('form'))"><i class="bi bi-trash"></i></button>
                                     </form>
                                     <?php
         endif; ?>

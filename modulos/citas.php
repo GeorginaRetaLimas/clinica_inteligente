@@ -118,10 +118,13 @@ require_once '../includes/header.php';
 </div>
 
 <?php if (isset($_GET['msg']) && $_GET['msg'] === 'added'): ?>
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        Cita programada exitosamente.
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if(typeof showAuraModal === 'function') {
+                showAuraModal('Operación Exitosa', 'Cita programada exitosamente.', 'success');
+            }
+        });
+    </script>
 <?php
 endif; ?>
 
@@ -176,10 +179,10 @@ endif; ?>
         endif; ?>
                                     <button class="btn btn-sm btn-outline-primary" onclick="editCita(<?php echo htmlspecialchars(json_encode($c)); ?>)" title="Editar"><i class="bi bi-pencil"></i></button>
                                     <?php if ($c['estado'] !== 'cancelada'): ?>
-                                    <form method="POST" action="" style="display:inline-block;" onsubmit="return confirm('¿Cancelar esta cita?');">
+                                    <form method="POST" action="" style="display:inline-block;">
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="id" value="<?php echo $c['id']; ?>">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Cancelar"><i class="bi bi-x-circle"></i></button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" title="Cancelar" onclick="showAuraConfirm('Cancelar Cita', '¿Cancelar esta cita?', this.closest('form'))"><i class="bi bi-x-circle"></i></button>
                                     </form>
                                     <?php
         endif; ?>

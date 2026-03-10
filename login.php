@@ -55,7 +55,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <p class="login-subtitle">Por favor, inicie sesión en su cuenta.</p>
         
         <?php if ($error): ?>
-            <div class="alert alert-danger py-2 w-100 mx-auto" style="max-width: 400px;"><?php echo htmlspecialchars($error); ?></div>
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    if(typeof showAuraModal === 'function') {
+                        showAuraModal('Error de Autenticación', '<?php echo addslashes(htmlspecialchars($error)); ?>', 'danger');
+                    }
+                });
+            </script>
         <?php
 endif; ?>
 

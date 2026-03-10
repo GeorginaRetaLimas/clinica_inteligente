@@ -111,9 +111,13 @@ curl_close($ch);
 if ($error) {
     echo json_encode(["status" => "error", "mensaje" => "Fallo conexión: " . $error]);
 }
+elseif ($httpcode === 429) {
+    echo json_encode(["status" => "error", "mensaje" => "AURA está procesando demasiadas solicitudes a la vez. Por favor, espera unos segundos antes de enviar otro mensaje."]);
+}
 elseif ($httpcode !== 200) {
     $resDecoded = json_decode($response, true);
-    echo json_encode(["status" => "error", "mensaje" => "Error de API Gemini HTTP $httpcode", "debug" => $resDecoded]);
+    $errorMsg = $resDecoded['error']['message'] ?? "Error de API Gemini HTTP $httpcode";
+    echo json_encode(["status" => "error", "mensaje" => $errorMsg]);
 }
 else {
     $resDecoded = json_decode($response, true);

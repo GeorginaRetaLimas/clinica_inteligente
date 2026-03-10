@@ -114,19 +114,27 @@ require_once '../includes/header.php';
 </div>
 
 <?php if (isset($_GET['msg'])): ?>
-    <div class="alert alert-info alert-dismissible fade show" role="alert">
-        <?php
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if(typeof showAuraModal === 'function') {
+                <?php
+    $modalMsg = '';
+    $modalType = 'info';
     if ($_GET['msg'] === 'added')
-        echo "Personal agregado exitosamente.";
+        $modalMsg = "Personal agregado exitosamente.";
     if ($_GET['msg'] === 'updated')
-        echo "Datos actualizados.";
+        $modalMsg = "Datos actualizados.";
     if ($_GET['msg'] === 'deleted')
-        echo "Usuario dado de baja (borrado lógico).";
-    if ($_GET['msg'] === 'error_self')
-        echo "No puedes eliminar tu propia cuenta mientras estás logueado.";
+        $modalMsg = "Usuario dado de baja (borrado lógico).";
+    if ($_GET['msg'] === 'error_self') {
+        $modalMsg = "No puedes eliminar tu propia cuenta mientras estás logueado.";
+        $modalType = "danger";
+    }
+    echo "showAuraModal('Información del Sistema', '" . addslashes($modalMsg) . "', '" . $modalType . "');";
 ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+            }
+        });
+    </script>
 <?php
 endif; ?>
 
@@ -161,10 +169,10 @@ endif; ?>
                             <td class="text-end">
                                 <button class="btn btn-sm btn-outline-primary" onclick="editMedico(<?php echo htmlspecialchars(json_encode($m)); ?>)"><i class="bi bi-pencil"></i></button>
                                 <?php if ($m['id'] != $admin_id && $m['activo'] == 1): ?>
-                                <form method="POST" action="" style="display:inline-block;" onsubmit="return confirm('¿Dar de baja a este usuario? Ya no podrá acceder al sistema.');">
+                                <form method="POST" action="" style="display:inline-block;">
                                     <input type="hidden" name="action" value="delete">
                                     <input type="hidden" name="id" value="<?php echo $m['id']; ?>">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="showAuraConfirm('Dar de Baja', '¿Dar de baja a este usuario? Ya no podrá acceder al sistema.', this.closest('form'))"><i class="bi bi-trash"></i></button>
                                 </form>
                                 <?php
     endif; ?>

@@ -1,3 +1,58 @@
+// Utilidades Modales Globales AURA
+function showAuraModal(title, message, type = 'info') {
+    const modalEl = document.getElementById('auraGlobalModal');
+    if (!modalEl) { alert(title + ": " + message); return; }
+
+    document.getElementById('auraGlobalModalTitle').innerHTML = title;
+    document.getElementById('auraGlobalModalBody').innerHTML = message;
+
+    const iconContainer = document.getElementById('auraGlobalModalIcon');
+    const iconBi = document.getElementById('auraGlobalModalIconBi');
+
+    if (iconContainer && iconBi) {
+        iconContainer.className = 'aura-icon-container ' + type;
+        if (type === 'success') iconBi.className = 'bi bi-check-lg';
+        else if (type === 'danger') iconBi.className = 'bi bi-x-lg';
+        else if (type === 'warning') iconBi.className = 'bi bi-exclamation-triangle';
+        else iconBi.className = 'bi bi-info-lg';
+    }
+
+    const m = new bootstrap.Modal(modalEl);
+    m.show();
+}
+
+let formToSubmit = null;
+function showAuraConfirm(title, message, formElementOrCallback) {
+    const modalEl = document.getElementById('auraConfirmModal');
+    if (!modalEl) {
+        if (confirm(title + "\\n\\n" + message)) {
+            if (typeof formElementOrCallback === 'function') formElementOrCallback();
+            else formElementOrCallback.submit();
+        }
+        return;
+    }
+
+    document.getElementById('auraConfirmModalTitle').innerHTML = `<i class="bi bi-exclamation-triangle-fill"></i> ${title}`;
+    document.getElementById('auraConfirmModalBody').innerHTML = message;
+
+    formToSubmit = formElementOrCallback;
+
+    // Asignar el listener al botón de confirmar solo una vez (limpiando previos clonando el obj)
+    const btn = document.getElementById('auraConfirmModalBtn');
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+
+    newBtn.addEventListener('click', () => {
+        const m = bootstrap.Modal.getInstance(modalEl);
+        m.hide();
+        if (typeof formToSubmit === 'function') formToSubmit();
+        else if (formToSubmit) formToSubmit.submit();
+    });
+
+    const m = new bootstrap.Modal(modalEl);
+    m.show();
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('chatForm');
     const input = document.getElementById('chatInput');
@@ -35,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function () {
         e.preventDefault();
         const text = input.value.trim();
         if (!text || !current_conversacion_id) {
-            if (!current_conversacion_id) alert("Por favor selecciona un chat del panel lateral.");
+            if (!current_conversacion_id) { showAuraModal('Atención', 'Por favor selecciona un chat del panel lateral.', 'warning'); return; }
             return;
         }
 
@@ -105,29 +160,90 @@ document.addEventListener('DOMContentLoaded', function () {
                         }
 
                         let dataExtractedHTML = '';
+                        let isRegistration = auraObj.operacion !== 'CONSULTAR_DATO';
+
                         if (auraObj.datos) {
                             for (const [key, value] of Object.entries(auraObj.datos)) {
-                                if (value !== null && typeof value !== 'object') {
-                                    dataExtractedHTML += `<tr><td class="text-muted fw-semibold border-0" style="font-size:0.8rem; padding: 2px 5px;">${key.replace('_id', '').replace(/_/g, ' ').toUpperCase()}</td><td class="border-0" style="font-size:0.85rem; padding: 2px 5px;">${value}</td></tr>`;
-                                } else if (value !== null && typeof value === 'object') {
-                                    dataExtractedHTML += `<tr><td colspan="2" class="text-info fw-bold border-0 pt-2" style="font-size:0.75rem;">${key.toUpperCase().replace(/_/g, ' ')}</td></tr>`;
-                                    for (const [subKey, subValue] of Object.entries(value)) {
-                                        if (subValue !== null) {
-                                            dataExtractedHTML += `<tr><td class="text-muted fw-semibold border-0" style="font-size:0.8rem; padding: 2px 5px; ps-3"><i class="bi bi-arrow-return-right"></i> ${subKey.replace('_id', '').replace(/_/g, ' ').toUpperCase()}</td><td class="border-0" style="font-size:0.85rem; padding: 2px 5px;">${subValue}</td></tr>`;
+                                if (['id', 'activo', 'fecha_creacion', 'fecha_actualizacion'].includes(key)) continue;
+
+                                let isMissing = auraObj.campos_faltantes && auraObj.campos_faltantes.includes(key);
+                                let label = key.replace('_id', '').replace(/_/g, ' ').toUpperCase();
+
+                                if (isRegistration) {
+                                    let inputHtml = '';
+
+                                    // Determinar el tipo de input según el nombre de la columna
+                                    if (key === 'sexo') {
+                                        let opts = [
+                                            { v: '', t: 'Seleccione...' },
+                                            { v: 'M', t: 'Masculino' },
+                                            { v: 'F', t: 'Femenino' },
+                                            { v: 'Otro', t: 'Otro' }
+                                        ];
+                                        let optHtml = opts.map(o => `<option value="${o.v}" ${value === o.v ? 'selected' : ''}>${o.t}</option>`).join('');
+                                        let errClass = isMissing ? 'border-danger' : 'border-info';
+                                        let sty = (isMissing && value === null) ? 'style="background-color: #ffeaea;"' : '';
+                                        inputHtml = `<select class="form-select form-select-sm ${errClass}" ${sty} name="${key}">${optHtml}</select>`;
+                                    }
+                                    else if (key === 'tipo_sangre_id') {
+                                        // Idealmente esto vendría de BD, pero mapeamos los básicos por ahora
+                                        let opts = [
+                                            { v: '', t: 'Desconocido...' },
+                                            { v: '1', t: 'A+' }, { v: '2', t: 'A-' },
+                                            { v: '3', t: 'B+' }, { v: '4', t: 'B-' },
+                                            { v: '5', t: 'AB+' }, { v: '6', t: 'AB-' },
+                                            { v: '7', t: 'O+' }, { v: '8', t: 'O-' }
+                                        ];
+                                        let optHtml = opts.map(o => `<option value="${o.v}" ${String(value) === String(o.v) ? 'selected' : ''}>${o.t}</option>`).join('');
+                                        let errClass = isMissing ? 'border-danger' : 'border-info';
+                                        let sty = (isMissing && value === null) ? 'style="background-color: #ffeaea;"' : '';
+                                        inputHtml = `<select class="form-select form-select-sm ${errClass}" ${sty} name="${key}">${optHtml}</select>`;
+                                    }
+                                    else if (key.includes('fecha')) {
+                                        let errClass = isMissing ? 'border-danger' : 'border-info';
+                                        let sty = (isMissing && value === null) ? 'style="background-color: #ffeaea;"' : '';
+                                        let maxToday = key === 'fecha_nacimiento' ? `max="${new Date().toISOString().split('T')[0]}"` : '';
+                                        inputHtml = `<input type="date" class="form-control form-control-sm ${errClass}" ${sty} name="${key}" value="${value || ''}" ${maxToday}>`;
+                                    }
+                                    else {
+                                        let errClass = isMissing ? 'border-danger' : (value !== null ? 'border-info' : '');
+                                        let sty = (isMissing && value === null) ? 'style="background-color: #ffeaea;"' : '';
+                                        let ph = isMissing ? 'placeholder="Falta dato..."' : '';
+                                        inputHtml = `<input type="text" class="form-control form-control-sm ${errClass}" ${sty} name="${key}" value="${value || ''}" ${ph}>`;
+                                    }
+
+                                    let reqText = isMissing ? ' <span class="text-danger">(Requerido)</span>' : (value === null ? ' <span class="text-muted fw-normal">(Opcional)</span>' : '');
+
+                                    dataExtractedHTML += `
+                                    <div class="mb-2">
+                                        <label class="form-label mb-0 text-muted" style="font-size: 0.75rem; font-weight: bold;">${label}${reqText}</label>
+                                        ${inputHtml}
+                                    </div>`;
+                                } else {
+                                    if (value !== null && typeof value !== 'object') {
+                                        dataExtractedHTML += `<tr><td class="text-muted fw-semibold border-0" style="font-size:0.8rem; padding: 2px 5px;">${label}</td><td class="border-0" style="font-size:0.85rem; padding: 2px 5px;">${value}</td></tr>`;
+                                    } else if (value !== null && typeof value === 'object') {
+                                        dataExtractedHTML += `<tr><td colspan="2" class="text-info fw-bold border-0 pt-2" style="font-size:0.75rem;">${key.toUpperCase().replace(/_/g, ' ')}</td></tr>`;
+                                        for (const [subKey, subValue] of Object.entries(value)) {
+                                            if (subValue !== null) {
+                                                dataExtractedHTML += `<tr><td class="text-muted fw-semibold border-0" style="font-size:0.8rem; padding: 2px 5px; ps-3"><i class="bi bi-arrow-return-right"></i> ${subKey.replace('_id', '').replace(/_/g, ' ').toUpperCase()}</td><td class="border-0" style="font-size:0.85rem; padding: 2px 5px;">${subValue}</td></tr>`;
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
 
-                        let titleOp = auraObj.operacion === 'CONSULTAR_DATO' ? 'Extracción de Datos Clínicos' : auraObj.operacion.replace('REGISTRAR_', 'Preregistro de ');
+                        let titleOp = isRegistration ? auraObj.operacion.replace('REGISTRAR_', 'Preregistro de ') : 'Extracción de Datos Clínicos';
+                        let formId = 'auraActionForm_' + Date.now();
+                        let contentHTML = isRegistration ? `<form id="${formId}" data-operation="${auraObj.operacion}">${dataExtractedHTML}</form>` : `<table class="table table-sm table-borderless mb-2"><tbody>${dataExtractedHTML}</tbody></table>`;
 
                         let buttonsHTML = '';
-                        if (auraObj.operacion !== 'CONSULTAR_DATO') {
+                        if (isRegistration) {
                             buttonsHTML = `
-                            <div class="d-grid gap-2 d-md-flex justify-content-md-end border-top pt-2">
-                                <button class="btn btn-sm btn-outline-secondary py-0" onclick="alert('Operación cancelada')">Descartar</button>
-                                <button class="btn btn-sm btn-info text-white py-0" onclick="alert('Funcionalidad de autollenado en desarrollo.')">Confirmar Acción</button>
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end border-top pt-2 mt-2">
+                                <button class="btn btn-sm btn-outline-secondary py-0" onclick="document.getElementById('${formId}').closest('.card').remove();">Descartar</button>
+                                <button class="btn btn-sm btn-info text-white py-0 pe-auto" onclick="submitAuraForm('${formId}')">Registrar</button>
                             </div>`;
                         }
 
@@ -136,9 +252,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             <div class="card-body p-2">
                                 <h6 class="card-title text-info mb-1 fw-bold" style="font-size: 0.85rem;"><i class="bi bi-robot"></i> ${titleOp}</h6>
                                 <div class="mb-2">${badgetsHTML}</div>
-                                <table class="table table-sm table-borderless mb-2">
-                                    <tbody>${dataExtractedHTML}</tbody>
-                                </table>
+                                ${contentHTML}
                                 ${buttonsHTML}
                             </div>
                         </div>`;
@@ -158,20 +272,22 @@ document.addEventListener('DOMContentLoaded', function () {
                 chatArea.insertAdjacentHTML('beforeend', iaMsg);
             } else {
                 chatArea.insertAdjacentHTML('beforeend', `
-                <div class="clearfix">
-                    <div class="wa-bubble-in shadow-sm bg-danger text-white border-danger">
-                        Error: ${data.mensaje || 'Respuesta no válida de la API'}
+                <div class="clearfix mt-2 mb-2">
+                    <div class="wa-bubble-in shadow-sm" style="background-color: #fdfaf5; border: 1px solid #f67a7a; border-left: 5px solid #f67a7a; max-width: 80%;">
+                        <p class="mb-1 text-danger fw-bold" style="font-size: 0.85rem;"><i class="bi bi-exclamation-circle-fill"></i> Aviso del Sistema AURA</p>
+                        <p class="mb-0 text-dark" style="font-size: 0.9rem;">${data.mensaje || 'Respuesta no válida de la API'}</p>
                     </div>
                 </div>`);
             }
         } catch (err) {
             document.getElementById(typingId).remove();
             chatArea.insertAdjacentHTML('beforeend', `
-            <div class="clearfix">
-                <div class="wa-bubble-in shadow-sm bg-danger text-white border-danger">
-                    Error local de conexión al servidor.
-                </div>
-            </div>`);
+                <div class="clearfix mt-2 mb-2">
+                    <div class="wa-bubble-in shadow-sm" style="background-color: #fdfaf5; border: 1px solid #f67a7a; border-left: 5px solid #f67a7a; max-width: 80%;">
+                        <p class="mb-1 text-danger fw-bold" style="font-size: 0.85rem;"><i class="bi bi-wifi-off"></i> Error de Conexión</p>
+                        <p class="mb-0 text-dark" style="font-size: 0.9rem;">No se pudo conectar al servidor local para procesar el mensaje.</p>
+                    </div>
+                </div>`);
         }
 
         chatArea.scrollTop = chatArea.scrollHeight;
@@ -233,7 +349,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     } else if (btnMic) {
         btnMic.addEventListener('click', () => {
-            alert("API de dictado por voz no soportada en este navegador (intenta en Chrome o Edge).");
+            showAuraModal("Incompatibilidad", "API de dictado por voz no soportada en este navegador (intenta en Chrome o Edge).", "warning");
         });
     }
 
@@ -336,7 +452,7 @@ document.addEventListener('DOMContentLoaded', function () {
         btnClearChat.addEventListener('click', async function () {
             if (!current_conversacion_id) return;
 
-            if (confirm("¿Estás seguro de que deseas limpiar la conversación actual? Los mensajes se ocultarán de la pantalla.")) {
+            showAuraConfirm('Limpiar Chat', '¿Estás seguro de que deseas limpiar la conversación actual? Los mensajes se ocultarán de la pantalla.', async () => {
                 try {
                     const res = await fetch('/clinica_app/api/clear_chat.php', {
                         method: 'POST',
@@ -353,12 +469,53 @@ document.addEventListener('DOMContentLoaded', function () {
                             </div>
                         </div>`;
                     } else {
-                        alert("Error al limpiar chat: " + data.mensaje);
+                        showAuraModal("Error", "Error al limpiar chat: " + data.mensaje, "danger");
                     }
                 } catch (e) {
-                    alert("Error de red intentando limpiar el chat.");
+                    showAuraModal("Error", "Error de red intentando limpiar el chat.", "danger");
                 }
-            }
+            });
         });
     }
+
+    // Función para guardar formulario predictivo
+    window.submitAuraForm = async function (formId) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        // Simple frontend validation
+        let hasErrors = false;
+        form.querySelectorAll('.border-danger').forEach(el => {
+            if (!el.value.trim()) hasErrors = true;
+        });
+
+        if (hasErrors) {
+            showAuraModal('Faltan Datos', 'Por favor, llena los campos marcados en rojo antes de registrar.', 'warning');
+            return;
+        }
+
+        const formData = new FormData(form);
+        const payload = {
+            operacion: form.getAttribute('data-operation'),
+            datos: Object.fromEntries(formData.entries())
+        };
+
+        try {
+            const res = await fetch('/clinica_app/api/save_aura.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+
+            if (data.status === 'success') {
+                form.closest('.card').remove();
+                showAuraModal('Registro Exitoso', 'Los datos fueron insertados correctamente en el sistema.', 'success');
+            } else {
+                showAuraModal('Error al Registrar', data.mensaje || 'Hubo un problema al guardar los datos.', 'danger');
+            }
+        } catch (e) {
+            showAuraModal('Error de Conexión', 'No se pudo contactar al servidor para el registro.', 'danger');
+        }
+    };
 });

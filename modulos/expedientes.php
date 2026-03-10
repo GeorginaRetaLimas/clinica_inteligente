@@ -126,10 +126,13 @@ require_once '../includes/header.php';
 </div>
 
 <?php if (isset($_GET['msg']) && $_GET['msg'] === 'added'): ?>
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        Expediente registrado exitosamente.
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if(typeof showAuraModal === 'function') {
+                showAuraModal('Operación Exitosa', 'Expediente registrado exitosamente.', 'success');
+            }
+        });
+    </script>
 <?php
 endif; ?>
 
@@ -174,10 +177,10 @@ endif; ?>
                                 </td>
                                 <td class="text-end">
                                     <button class="btn btn-sm btn-outline-primary" onclick="editExpediente(<?php echo htmlspecialchars(json_encode($e)); ?>)" title="Editar"><i class="bi bi-pencil"></i></button>
-                                    <form method="POST" action="" style="display:inline-block;" onsubmit="return confirm('¿Eliminar lógicamente este registro de expediente?');">
+                                    <form method="POST" action="" style="display:inline-block;">
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="id" value="<?php echo $e['id']; ?>">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" title="Eliminar" onclick="showAuraConfirm('Eliminar Expediente', '¿Eliminar lógicamente este registro de expediente?', this.closest('form'))"><i class="bi bi-trash"></i></button>
                                     </form>
                                 </td>
                             </tr>
