@@ -48,9 +48,26 @@ try {
 
     }
     elseif ($op === 'REGISTRAR_CITA') {
+        // Soporte IA para nombres en lugar de IDs
+        if (empty($datos['paciente_id']) && !empty($datos['nombre_paciente_mencionado'])) {
+            $nombreMencionado = trim($datos['nombre_paciente_mencionado']);
+            // Separamos por espacios o buscamos completo
+            $termino = '%' . str_replace(' ', '%', $nombreMencionado) . '%';
+            $stmt_busqueda = $pdo->prepare("SELECT id FROM pacientes WHERE CONCAT(nombre, ' ', apellido_paterno, ' ', IFNULL(apellido_materno, '')) LIKE ? LIMIT 1");
+            $stmt_busqueda->execute([$termino]);
+            $pid_encontrado = $stmt_busqueda->fetchColumn();
+
+            if ($pid_encontrado) {
+                $datos['paciente_id'] = $pid_encontrado;
+            }
+            else {
+                echo json_encode(['status' => 'error', 'mensaje' => 'AURA no pudo encontrar ningún paciente registrado que coincida con "' . $nombreMencionado . '". Por favor, verifica el nombre o regístralo primero.']);
+                exit;
+            }
+        }
+
         $stmt = $pdo->prepare('INSERT INTO citas (paciente_id, medico_id, fecha_hora, duracion_min, motivo, estado) VALUES (?, ?, ?, ?, ?, "programada")');
 
-        // El id del paciente o medico debería resolverse si AURA lo manda, de lo contrario esto puede fallar por llaves foráneas.
         // Asignaremos el medico_id logueado como defecto si falta.
         $medico_id = $datos['medico_id'] ?? $_SESSION['medico_id'];
 

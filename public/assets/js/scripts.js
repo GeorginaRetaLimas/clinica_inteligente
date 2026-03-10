@@ -1,57 +1,4 @@
-// Utilidades Modales Globales AURA
-function showAuraModal(title, message, type = 'info') {
-    const modalEl = document.getElementById('auraGlobalModal');
-    if (!modalEl) { alert(title + ": " + message); return; }
 
-    document.getElementById('auraGlobalModalTitle').innerHTML = title;
-    document.getElementById('auraGlobalModalBody').innerHTML = message;
-
-    const iconContainer = document.getElementById('auraGlobalModalIcon');
-    const iconBi = document.getElementById('auraGlobalModalIconBi');
-
-    if (iconContainer && iconBi) {
-        iconContainer.className = 'aura-icon-container ' + type;
-        if (type === 'success') iconBi.className = 'bi bi-check-lg';
-        else if (type === 'danger') iconBi.className = 'bi bi-x-lg';
-        else if (type === 'warning') iconBi.className = 'bi bi-exclamation-triangle';
-        else iconBi.className = 'bi bi-info-lg';
-    }
-
-    const m = new bootstrap.Modal(modalEl);
-    m.show();
-}
-
-let formToSubmit = null;
-function showAuraConfirm(title, message, formElementOrCallback) {
-    const modalEl = document.getElementById('auraConfirmModal');
-    if (!modalEl) {
-        if (confirm(title + "\\n\\n" + message)) {
-            if (typeof formElementOrCallback === 'function') formElementOrCallback();
-            else formElementOrCallback.submit();
-        }
-        return;
-    }
-
-    document.getElementById('auraConfirmModalTitle').innerHTML = `<i class="bi bi-exclamation-triangle-fill"></i> ${title}`;
-    document.getElementById('auraConfirmModalBody').innerHTML = message;
-
-    formToSubmit = formElementOrCallback;
-
-    // Asignar el listener al botón de confirmar solo una vez (limpiando previos clonando el obj)
-    const btn = document.getElementById('auraConfirmModalBtn');
-    const newBtn = btn.cloneNode(true);
-    btn.parentNode.replaceChild(newBtn, btn);
-
-    newBtn.addEventListener('click', () => {
-        const m = bootstrap.Modal.getInstance(modalEl);
-        m.hide();
-        if (typeof formToSubmit === 'function') formToSubmit();
-        else if (formToSubmit) formToSubmit.submit();
-    });
-
-    const m = new bootstrap.Modal(modalEl);
-    m.show();
-}
 
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('chatForm');
@@ -164,16 +111,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
                         if (auraObj.datos) {
                             for (const [key, value] of Object.entries(auraObj.datos)) {
-                                if (['id', 'activo', 'fecha_creacion', 'fecha_actualizacion'].includes(key)) continue;
+                                if (['id', 'activo', 'fecha_creacion', 'fecha_actualizacion', 'paciente_id'].includes(key) && !(key === 'paciente_id' && auraObj.operacion === 'REGISTRAR_CITA' && isMissing)) continue;
 
-                                let isMissing = auraObj.campos_faltantes && auraObj.campos_faltantes.includes(key);
+                                let isMissingLocal = auraObj.campos_faltantes && auraObj.campos_faltantes.includes(key);
                                 let label = key.replace('_id', '').replace(/_/g, ' ').toUpperCase();
 
                                 if (isRegistration) {
                                     let inputHtml = '';
 
+                                    // Manejo especial predictivo para Pacientes
+                                    if (key === 'nombre_paciente_mencionado') {
+                                        label = "PACIENTE A BUSCAR";
+                                        let errClass = isMissingLocal ? 'border-danger' : 'border-info';
+                                        let sty = (isMissingLocal && value === null) ? 'style="background-color: #ffeaea;"' : '';
+                                        inputHtml = `<input type="text" class="form-control form-control-sm ${errClass}" ${sty} name="${key}" value="${value || ''}" placeholder="Escribe el nombre del paciente...">`;
+                                    }
+
                                     // Determinar el tipo de input según el nombre de la columna
-                                    if (key === 'sexo') {
+                                    else if (key === 'sexo') {
                                         let opts = [
                                             { v: '', t: 'Seleccione...' },
                                             { v: 'M', t: 'Masculino' },
@@ -181,8 +136,8 @@ document.addEventListener('DOMContentLoaded', function () {
                                             { v: 'Otro', t: 'Otro' }
                                         ];
                                         let optHtml = opts.map(o => `<option value="${o.v}" ${value === o.v ? 'selected' : ''}>${o.t}</option>`).join('');
-                                        let errClass = isMissing ? 'border-danger' : 'border-info';
-                                        let sty = (isMissing && value === null) ? 'style="background-color: #ffeaea;"' : '';
+                                        let errClass = isMissingLocal ? 'border-danger' : 'border-info';
+                                        let sty = (isMissingLocal && value === null) ? 'style="background-color: #ffeaea;"' : '';
                                         inputHtml = `<select class="form-select form-select-sm ${errClass}" ${sty} name="${key}">${optHtml}</select>`;
                                     }
                                     else if (key === 'tipo_sangre_id') {
@@ -195,24 +150,27 @@ document.addEventListener('DOMContentLoaded', function () {
                                             { v: '7', t: 'O+' }, { v: '8', t: 'O-' }
                                         ];
                                         let optHtml = opts.map(o => `<option value="${o.v}" ${String(value) === String(o.v) ? 'selected' : ''}>${o.t}</option>`).join('');
-                                        let errClass = isMissing ? 'border-danger' : 'border-info';
-                                        let sty = (isMissing && value === null) ? 'style="background-color: #ffeaea;"' : '';
+                                        let errClass = isMissingLocal ? 'border-danger' : 'border-info';
+                                        let sty = (isMissingLocal && value === null) ? 'style="background-color: #ffeaea;"' : '';
                                         inputHtml = `<select class="form-select form-select-sm ${errClass}" ${sty} name="${key}">${optHtml}</select>`;
                                     }
                                     else if (key.includes('fecha')) {
-                                        let errClass = isMissing ? 'border-danger' : 'border-info';
-                                        let sty = (isMissing && value === null) ? 'style="background-color: #ffeaea;"' : '';
+                                        let errClass = isMissingLocal ? 'border-danger' : 'border-info';
+                                        let sty = (isMissingLocal && value === null) ? 'style="background-color: #ffeaea;"' : '';
                                         let maxToday = key === 'fecha_nacimiento' ? `max="${new Date().toISOString().split('T')[0]}"` : '';
-                                        inputHtml = `<input type="date" class="form-control form-control-sm ${errClass}" ${sty} name="${key}" value="${value || ''}" ${maxToday}>`;
+                                        // Formatear si viene de gpt con HH:MM
+                                        let valFecha = value ? value.replace(' ', 'T') : '';
+                                        let typeInput = key === 'fecha_hora' ? 'datetime-local' : 'date';
+                                        inputHtml = `<input type="${typeInput}" class="form-control form-control-sm ${errClass}" ${sty} name="${key}" value="${valFecha}" ${maxToday}>`;
                                     }
                                     else {
-                                        let errClass = isMissing ? 'border-danger' : (value !== null ? 'border-info' : '');
-                                        let sty = (isMissing && value === null) ? 'style="background-color: #ffeaea;"' : '';
-                                        let ph = isMissing ? 'placeholder="Falta dato..."' : '';
+                                        let errClass = isMissingLocal ? 'border-danger' : (value !== null ? 'border-info' : '');
+                                        let sty = (isMissingLocal && value === null) ? 'style="background-color: #ffeaea;"' : '';
+                                        let ph = isMissingLocal ? 'placeholder="Falta dato..."' : '';
                                         inputHtml = `<input type="text" class="form-control form-control-sm ${errClass}" ${sty} name="${key}" value="${value || ''}" ${ph}>`;
                                     }
 
-                                    let reqText = isMissing ? ' <span class="text-danger">(Requerido)</span>' : (value === null ? ' <span class="text-muted fw-normal">(Opcional)</span>' : '');
+                                    let reqText = isMissingLocal ? ' <span class="text-danger">(Requerido)</span>' : (value === null ? ' <span class="text-muted fw-normal">(Opcional/Auto)</span>' : '');
 
                                     dataExtractedHTML += `
                                     <div class="mb-2">
@@ -292,66 +250,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         chatArea.scrollTop = chatArea.scrollHeight;
     });
-
-    // Web Speech API Logic
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    let recognition;
-    let isRecording = false;
-
-    if (SpeechRecognition && btnMic) {
-        recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = false;
-        recognition.lang = 'es-ES';
-
-        recognition.onstart = function () {
-            isRecording = true;
-            btnMic.innerHTML = '<i class="bi bi-stop-circle-fill fs-4 text-danger pulse-anim"></i>';
-            input.placeholder = "Escuchando audio...";
-            input.disabled = true;
-        };
-
-        recognition.onresult = function (event) {
-            const transcript = event.results[0][0].transcript;
-            input.value = input.value + (input.value ? ' ' : '') + transcript;
-        };
-
-        recognition.onerror = function (event) {
-            console.error("Error en Speech Recognition:", event.error);
-            isRecording = false;
-            resetMicUI();
-        };
-
-        recognition.onend = function () {
-            isRecording = false;
-            resetMicUI();
-        };
-
-        function resetMicUI() {
-            // Check if there's text to display the send button instead of mic
-            if (input.value.trim().length > 0) {
-                btnMic.classList.add('d-none');
-                btnSendText.classList.remove('d-none');
-            } else {
-                btnMic.innerHTML = '<i class="bi bi-mic-fill fs-4"></i>';
-            }
-            input.placeholder = "Escribe un mensaje...";
-            input.disabled = false;
-            input.focus();
-        }
-
-        btnMic.addEventListener('click', function () {
-            if (isRecording) {
-                recognition.stop();
-            } else {
-                recognition.start();
-            }
-        });
-    } else if (btnMic) {
-        btnMic.addEventListener('click', () => {
-            showAuraModal("Incompatibilidad", "API de dictado por voz no soportada en este navegador (intenta en Chrome o Edge).", "warning");
-        });
-    }
 
     // Sidebar Patient interaction visual effect
     document.querySelectorAll('.wa-contact').forEach(contact => {

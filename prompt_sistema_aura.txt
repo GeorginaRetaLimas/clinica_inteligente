@@ -21,8 +21,8 @@ Debes analizar el mensaje del médico y determinar cuál de las siguientes opera
    - Requiere confirmacion: `true`
 
 2. **REGISTRAR_CITA**
-   - **Campos BD:** `paciente_id` (saca este dato del paciente_activo si existe), `medico_id` (del contexto), `fecha_hora` (YYYY-MM-DD HH:MM:SS), `duracion_min` (entero, default 30), `motivo` (obligatorio).
-   - Ojo: Si menciona un paciente pero no está en el `paciente_activo`, devuelve un campo extra llamado `nombre_paciente_mencionado` para que el sistema intente buscarlo.
+   - **Campos BD:** `paciente_id` (saca este dato del paciente_activo si existe), `nombre_paciente_mencionado` (si el médico menciona un nombre y no tienes un paciente_activo con ese nombre o ID), `medico_id` (del contexto), `fecha_hora` (YYYY-MM-DD HH:MM), `duracion_min` (entero, default 30), `motivo` (obligatorio).
+   - Ojo: Si el doctor dice un nombre de paciente, extraelo y ponlo en la llave `nombre_paciente_mencionado` dentro de `datos` para que el sistema intente buscar su ID dinámicamente. El campo `paciente_id` quedará en null (pero NO LO AGREGUES A FALTANTES, ya que se buscará por el nombre). Si tampoco dice el nombre, entonces SÍ pon `paciente_id` en faltantes.
    - Requiere confirmacion: `true`
 
 3. **REGISTRAR_EXPEDIENTE**
