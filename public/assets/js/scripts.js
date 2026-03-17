@@ -111,20 +111,38 @@ document.addEventListener('DOMContentLoaded', function () {
 
                         if (auraObj.datos) {
                             for (const [key, value] of Object.entries(auraObj.datos)) {
-                                if (['id', 'activo', 'fecha_creacion', 'fecha_actualizacion', 'paciente_id'].includes(key) && !(key === 'paciente_id' && auraObj.operacion === 'REGISTRAR_CITA' && isMissing)) continue;
-
                                 let isMissingLocal = auraObj.campos_faltantes && auraObj.campos_faltantes.includes(key);
+
+                                if (['id', 'activo', 'fecha_creacion', 'fecha_actualizacion', 'paciente_id', 'medico_id'].includes(key) && !(key === 'paciente_id' && (auraObj.operacion === 'REGISTRAR_CITA' || auraObj.operacion === 'REGISTRAR_EXPEDIENTE') && isMissingLocal)) continue;
+
                                 let label = key.replace('_id', '').replace(/_/g, ' ').toUpperCase();
 
                                 if (isRegistration) {
                                     let inputHtml = '';
 
                                     // Manejo especial predictivo para Pacientes
-                                    if (key === 'nombre_paciente_mencionado') {
-                                        label = "PACIENTE A BUSCAR";
+                                    if (key === 'nombre_paciente_mencionado' || (key === 'paciente_id' && isMissingLocal)) {
+                                        label = "PACIENTE";
                                         let errClass = isMissingLocal ? 'border-danger' : 'border-info';
                                         let sty = (isMissingLocal && value === null) ? 'style="background-color: #ffeaea;"' : '';
-                                        inputHtml = `<input type="text" class="form-control form-control-sm ${errClass}" ${sty} name="${key}" value="${value || ''}" placeholder="Escribe el nombre del paciente...">`;
+
+                                        // Petición síncrona dentro del flujo asíncrono para renderizar selects
+                                        let pacOptsHTML = '<option value="">Seleccione a un paciente...</option>';
+                                        try {
+                                            const reqPac = await fetch('/clinica_app/api/get_pacientes_dropdown.php?op=' + auraObj.operacion);
+                                            const dataPac = await reqPac.json();
+                                            dataPac.forEach(p => {
+                                                let pFullName = `${p.nombre} ${p.apellido_paterno}`;
+                                                let isSelected = false;
+                                                if (key === 'nombre_paciente_mencionado' && value && pFullName.toLowerCase().includes(value.toLowerCase())) isSelected = true;
+                                                pacOptsHTML += `<option value="${p.id}" ${isSelected ? 'selected' : ''}>${pFullName}</option>`;
+                                            });
+                                        } catch (e) { }
+
+                                        inputHtml = `<select class="form-select form-select-sm ${errClass}" ${sty} name="paciente_id">${pacOptsHTML}</select>`;
+
+                                        // Si es nombre_mencionado, lo cambiamos a que se envíe como paciente_id a la DB para más facilidad
+                                        let keyAux = 'paciente_id';
                                     }
 
                                     // Determinar el tipo de input según el nombre de la columna
@@ -157,26 +175,32 @@ document.addEventListener('DOMContentLoaded', function () {
                                     else if (key.includes('fecha')) {
                                         let errClass = isMissingLocal ? 'border-danger' : 'border-info';
                                         let sty = (isMissingLocal && value === null) ? 'style="background-color: #ffeaea;"' : '';
-                                        let maxToday = key === 'fecha_nacimiento' ? `max="${new Date().toISOString().split('T')[0]}"` : '';
+                                        let minToday = key === 'fecha_hora' ? `min="${new Date().toISOString().split('T')[0]}T00:00"` : '';
                                         // Formatear si viene de gpt con HH:MM
                                         let valFecha = value ? value.replace(' ', 'T') : '';
                                         let typeInput = key === 'fecha_hora' ? 'datetime-local' : 'date';
-                                        inputHtml = `<input type="${typeInput}" class="form-control form-control-sm ${errClass}" ${sty} name="${key}" value="${valFecha}" ${maxToday}>`;
+                                        inputHtml = `<input type="${typeInput}" class="form-control form-control-sm ${errClass}" ${sty} name="${key}" value="${valFecha}" ${maxToday} ${minToday}>`;
                                     }
                                     else {
                                         let errClass = isMissingLocal ? 'border-danger' : (value !== null ? 'border-info' : '');
                                         let sty = (isMissingLocal && value === null) ? 'style="background-color: #ffeaea;"' : '';
                                         let ph = isMissingLocal ? 'placeholder="Falta dato..."' : '';
-                                        inputHtml = `<input type="text" class="form-control form-control-sm ${errClass}" ${sty} name="${key}" value="${value || ''}" ${ph}>`;
+                                        let keyInputName = (typeof keyAux !== 'undefined' && keyAux === 'paciente_id') ? 'paciente_id' : key;
+                                        inputHtml = `<input type="text" class="form-control form-control-sm ${errClass}" ${sty} name="${keyInputName}" value="${value || ''}" ${ph}>`;
                                     }
 
                                     let reqText = isMissingLocal ? ' <span class="text-danger">(Requerido)</span>' : (value === null ? ' <span class="text-muted fw-normal">(Opcional/Auto)</span>' : '');
 
-                                    dataExtractedHTML += `
-                                    <div class="mb-2">
-                                        <label class="form-label mb-0 text-muted" style="font-size: 0.75rem; font-weight: bold;">${label}${reqText}</label>
-                                        ${inputHtml}
-                                    </div>`;
+                                    // Para evitar duplicación si la IA mandó tanto nombre_mencionado como paciente_id missing a la vez
+                                    if ((typeof keyAux !== 'undefined' && keyAux === 'paciente_id') && dataExtractedHTML.includes('name="paciente_id"')) {
+                                        // Skip double render of paciente_id select
+                                    } else {
+                                        dataExtractedHTML += `
+                                        <div class="mb-2">
+                                            <label class="form-label mb-0 text-muted" style="font-size: 0.75rem; font-weight: bold;">${label}${reqText}</label>
+                                            ${inputHtml}
+                                        </div>`;
+                                    }
                                 } else {
                                     if (value !== null && typeof value !== 'object') {
                                         dataExtractedHTML += `<tr><td class="text-muted fw-semibold border-0" style="font-size:0.8rem; padding: 2px 5px;">${label}</td><td class="border-0" style="font-size:0.85rem; padding: 2px 5px;">${value}</td></tr>`;
@@ -395,7 +419,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const formData = new FormData(form);
         const payload = {
             operacion: form.getAttribute('data-operation'),
-            datos: Object.fromEntries(formData.entries())
+            datos: Object.fromEntries(formData.entries()),
+            conversacion_id: current_conversacion_id
         };
 
         try {
@@ -409,6 +434,9 @@ document.addEventListener('DOMContentLoaded', function () {
             if (data.status === 'success') {
                 form.closest('.card').remove();
                 showAuraModal('Registro Exitoso', 'Los datos fueron insertados correctamente en el sistema.', 'success');
+                if (payload.operacion === 'REGISTRAR_PACIENTE') {
+                    setTimeout(() => location.reload(), 2000);
+                }
             } else {
                 showAuraModal('Error al Registrar', data.mensaje || 'Hubo un problema al guardar los datos.', 'danger');
             }

@@ -26,8 +26,8 @@ Debes analizar el mensaje del médico y determinar cuál de las siguientes opera
    - Requiere confirmacion: `true`
 
 3. **REGISTRAR_EXPEDIENTE**
-   - **Campos BD:** `paciente_id` (obligatorio, del contexto), `medico_id` (del contexto), `motivo_consulta` (obligatorio), `sintomas`, `diagnostico`, `tratamiento`, `medicamentos`, `notas`, `presion_sistolica` (entero), `presion_diastolica` (entero), `temperatura` (decimal), `frecuencia_cardiaca` (entero), `frecuencia_resp` (entero), `peso_kg` (decimal), `talla_cm` (decimal).
-   - Extrae inteligentemente las métricas si las menciona (ej. "presión 120 80", "peso 70kg").
+   - **Campos BD:** `paciente_id` (del contexto), `nombre_paciente_mencionado` (si el médico menciona un nombre y no hay `paciente_id`, no lo marques como faltante, usa esta llave en `datos`), `medico_id` (del contexto), `motivo_consulta` (obligatorio), `sintomas`, `diagnostico`, `tratamiento`, `medicamentos`, `notas`, `presion_sistolica` (entero), `presion_diastolica` (entero), `temperatura` (decimal), `frecuencia_cardiaca` (entero), `frecuencia_resp` (entero), `peso_kg` (decimal), `talla_cm` (decimal).
+   - Extrae inteligentemente las métricas vitales si las menciona (ej. "presión 120 80", "peso 70kg"). Deja en `null` lo no especificado. Asegúrate de incluir y devolver **todas** estas llaves vacías en el JSON aunque no las mencione, agregando a faltantes solo `motivo_consulta`.
    - Requiere confirmacion: `true`
 
 4. **CONSULTAR_DATO**

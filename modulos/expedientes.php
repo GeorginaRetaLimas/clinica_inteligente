@@ -90,7 +90,7 @@ if ($isAdmin) {
                  WHERE e.activo = 1
                  ORDER BY e.fecha_consulta DESC";
     $expedientes = $pdo->query($sqlExp)->fetchAll();
-    $pacientes = $pdo->query("SELECT id, nombre, apellido_paterno FROM pacientes WHERE activo = 1")->fetchAll();
+    $pacientes = $pdo->query("SELECT DISTINCT p.id, p.nombre, p.apellido_paterno FROM pacientes p INNER JOIN citas c ON p.id = c.paciente_id WHERE p.activo = 1 AND c.estado IN ('programada','pendiente')")->fetchAll();
 }
 else {
     $sqlExp = "SELECT e.*, p.nombre as p_nombre, p.apellido_paterno as p_ap 
@@ -102,7 +102,7 @@ else {
     $stmt->execute([$medico_id]);
     $expedientes = $stmt->fetchAll();
 
-    $stmt = $pdo->prepare("SELECT p.id, p.nombre, p.apellido_paterno FROM pacientes p INNER JOIN paciente_medico pm ON p.id = pm.paciente_id WHERE pm.medico_id = ?");
+    $stmt = $pdo->prepare("SELECT DISTINCT p.id, p.nombre, p.apellido_paterno FROM pacientes p INNER JOIN citas c ON p.id = c.paciente_id WHERE p.activo = 1 AND c.estado IN ('programada','pendiente') AND c.medico_id = ?");
     $stmt->execute([$medico_id]);
     $pacientes = $stmt->fetchAll();
 }

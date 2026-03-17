@@ -19,6 +19,7 @@ if (!$input || !isset($input['operacion']) || !isset($input['datos'])) {
 
 $op = $input['operacion'];
 $datos = $input['datos'];
+$conversacion_id = $input['conversacion_id'] ?? null;
 
 try {
     // Limpiar claves nullas o vacías por defecto si no son string vacio (a null)
@@ -66,7 +67,7 @@ try {
             }
         }
 
-        $stmt = $pdo->prepare('INSERT INTO citas (paciente_id, medico_id, fecha_hora, duracion_min, motivo, estado) VALUES (?, ?, ?, ?, ?, "programada")');
+        $stmt = $pdo->prepare('INSERT INTO citas (paciente_id, medico_id, fecha_hora, duracion_min, motivo, estado, conversacion_id) VALUES (?, ?, ?, ?, ?, "programada", ?)');
 
         // Asignaremos el medico_id logueado como defecto si falta.
         $medico_id = $datos['medico_id'] ?? $_SESSION['medico_id'];
@@ -76,20 +77,66 @@ try {
             $medico_id,
             $datos['fecha_hora'] ?? null,
             $datos['duracion_min'] ?? 30,
-            $datos['motivo'] ?? null
+            $datos['motivo'] ?? null,
+            $conversacion_id
         ]);
 
         echo json_encode(['status' => 'success', 'mensaje' => 'Cita programada.']);
 
     }
     elseif ($op === 'REGISTRAR_EXPEDIENTE') {
-        $stmt = $pdo->prepare('INSERT INTO expedientes (paciente_id, medico_id, diagnostico, tratamiento, medicamentos, notas, presion_sistolica, presion_diastolica, temperatura, frecuencia_cardiaca, frecuencia_resp, peso_kg, talla_cm) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        // Soporte IA para nombres
+        if (empty($datos['paciente_id']) && !empty($datos['nombre_paciente_mencionado'])) {
+            $nombreMencionado = trim($datos['nombre_paciente_mencionado']);
+            $termino = '%' . str_replace(' ', '%', $nombreMencionado) . '%';
+            $stmt_busqueda = $pdo->prepare("SELECT id FROM pacientes WHERE CONCAT(nombre, ' ', apellido_paterno, ' ', IFNULL(apellido_materno, '')) LIKE ? LIMIT 1");
+            $stmt_busqueda->execute([$termino]);
+            $pid_encontrado = $stmt_busqueda->fetchColumn();
+
+            if ($pid_encontrado) {
+                // Validación estricta: ¿Este paciente encontrado tiene CITA PENDIENTE?
+                $stmt_cita = $pdo->prepare("SELECT id FROM citas WHERE paciente_id = ? AND estado IN ('programada', 'pendiente') ORDER BY fecha_hora ASC LIMIT 1");
+                $stmt_cita->execute([$pid_encontrado]);
+                $cita_confirmada = $stmt_cita->fetchColumn();
+
+                if (!$cita_confirmada) {
+                    echo json_encode(['status' => 'error', 'mensaje' => 'Aviso de AURA: Encontré a "' . $nombreMencionado . '" en sistema, pero NO cuenta con una CITA pendiente hoy para abrirle Expediente.']);
+                    exit;
+                }
+
+                $datos['paciente_id'] = $pid_encontrado;
+            }
+            else {
+                echo json_encode(['status' => 'error', 'mensaje' => 'AURA no pudo encontrar ningún paciente registrado que coincida con "' . $nombreMencionado . '".']);
+                exit;
+            }
+        }
 
         $medico_id = $datos['medico_id'] ?? $_SESSION['medico_id'];
 
+        // Validar Cita Activa
+        if (!empty($datos['paciente_id'])) {
+            $stmt_cita = $pdo->prepare("SELECT id FROM citas WHERE paciente_id = ? AND estado IN ('programada', 'pendiente') ORDER BY fecha_hora ASC LIMIT 1");
+            $stmt_cita->execute([$datos['paciente_id']]);
+            $cita_activa = $stmt_cita->fetchColumn();
+
+            if (!$cita_activa) {
+                echo json_encode(['status' => 'error', 'mensaje' => 'Aviso de AURA: Este paciente no cuenta con una cita médica pendiente. Por favor agenda una cita primero antes de redactar un expediente para él.']);
+                exit;
+            }
+        }
+        else {
+            echo json_encode(['status' => 'error', 'mensaje' => 'Aviso de AURA: Es necesario mencionar al paciente o seleccionarlo para el Expediente.']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare('INSERT INTO expedientes (paciente_id, medico_id, motivo_consulta, sintomas, diagnostico, tratamiento, medicamentos, notas, presion_sistolica, presion_diastolica, temperatura, frecuencia_cardiaca, frecuencia_resp, peso_kg, talla_cm, conversacion_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+
         $stmt->execute([
-            $datos['paciente_id'] ?? null,
+            $datos['paciente_id'],
             $medico_id,
+            $datos['motivo_consulta'] ?? null,
+            $datos['sintomas'] ?? null,
             $datos['diagnostico'] ?? null,
             $datos['tratamiento'] ?? null,
             $datos['medicamentos'] ?? null,
@@ -100,10 +147,16 @@ try {
             $datos['frecuencia_cardiaca'] ?? null,
             $datos['frecuencia_resp'] ?? null,
             $datos['peso_kg'] ?? null,
-            $datos['talla_cm'] ?? null
+            $datos['talla_cm'] ?? null,
+            $conversacion_id
         ]);
 
-        echo json_encode(['status' => 'success', 'mensaje' => 'Expediente añadido.']);
+        $nuevo_exp_id = $pdo->lastInsertId();
+
+        // Cerrar Cita Activa
+        $pdo->prepare("UPDATE citas SET estado = 'completada', expediente_id = ? WHERE id = ?")->execute([$nuevo_exp_id, $cita_activa]);
+
+        echo json_encode(['status' => 'success', 'mensaje' => 'Expediente añadido y Cita completada.']);
     }
     else {
         echo json_encode(['status' => 'error', 'mensaje' => 'Operación desconocida']);
