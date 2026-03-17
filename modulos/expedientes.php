@@ -27,6 +27,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $datos_despues = ['id' => $nuevo_id, 'paciente_id' => $paciente_id, 'motivo' => $motivo, 'sintomas' => $sintomas];
             registrarAuditoria($pdo, $medico_id, 'expedientes', $nuevo_id, 'INSERT', null, $datos_despues);
 
+            // Log de Captura (Manual)
+            $campos_capturados = 0;
+            foreach (['motivo_consulta', 'sintomas', 'diagnostico', 'tratamiento', 'medicamentos', 'notas', 'presion_sistolica', 'presion_diastolica', 'temperatura', 'frecuencia_cardiaca', 'frecuencia_resp', 'peso_kg', 'talla_cm'] as $f) {
+                if (!empty($_POST[$f]))
+                    $campos_capturados++;
+            }
+            $inicio_captura = !empty($_POST['inicio_captura']) ? $_POST['inicio_captura'] : date('Y-m-d H:i:s');
+            // Fin = insertado local (NOW(3))
+            try {
+                $pdo->prepare("INSERT INTO logs_captura (medico_id, expediente_id, metodo, inicio, fin, errores_validacion, campos_capturados) VALUES (?, ?, 'manual', ?, NOW(3), 0, ?)")->execute([$medico_id, $nuevo_id, $inicio_captura, $campos_capturados]);
+            }
+            catch (Exception $e) {
+            }
+
             // Si venimos referenciados de una cita, actualizar su estado a completada y relacionarla
             if (!empty($_POST['cita_id'])) {
                 $cita_id = (int)$_POST['cita_id'];
@@ -208,6 +222,7 @@ endif; ?>
       <div class="modal-body">
         <input type="hidden" name="action" value="add">
         <input type="hidden" name="cita_id" value="<?php echo isset($_GET['cita_id']) ? htmlspecialchars($_GET['cita_id']) : ''; ?>">
+        <input type="hidden" name="inicio_captura" id="add_inicio_captura" value="">
         <div class="row g-3">
             <div class="col-md-12">
                 <label class="form-label">Paciente</label>
@@ -262,6 +277,41 @@ endforeach; ?>
                 <textarea class="form-control" name="motivo_consulta" id="edit_motivo" rows="2" required></textarea>
             </div>
             <div class="col-md-12">
+                <label class="form-label text-primary fw-bold border-bottom w-100 pb-1 mt-2">Signos Vitales y Mediciones</label>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">T.A. Sistólica</label>
+                <input type="number" class="form-control" name="presion_sistolica" id="edit_ps" placeholder="Ej. 120">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">T.A. Diastólica</label>
+                <input type="number" class="form-control" name="presion_diastolica" id="edit_pd" placeholder="Ej. 80">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Temp (°C)</label>
+                <input type="number" step="0.1" class="form-control" name="temperatura" id="edit_temp" placeholder="Ej. 36.5">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">FC (LPM)</label>
+                <input type="number" class="form-control" name="frecuencia_cardiaca" id="edit_fc" placeholder="Ej. 75">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">FR (RPM)</label>
+                <input type="number" class="form-control" name="frecuencia_resp" id="edit_fr" placeholder="Ej. 18">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Peso (Kg)</label>
+                <input type="number" step="0.1" class="form-control" name="peso_kg" id="edit_peso" placeholder="Ej. 70.5">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Talla (Cm)</label>
+                <input type="number" step="0.1" class="form-control" name="talla_cm" id="edit_talla" placeholder="Ej. 175">
+            </div>
+
+            <div class="col-md-12">
+                <label class="form-label text-primary fw-bold border-bottom w-100 pb-1 mt-2">Evaluación y Diagnóstico</label>
+            </div>
+            <div class="col-md-12">
                 <label class="form-label">Síntomas</label>
                 <textarea class="form-control" name="sintomas" id="edit_sintomas" rows="2"></textarea>
             </div>
@@ -270,8 +320,16 @@ endforeach; ?>
                 <textarea class="form-control" name="diagnostico" id="edit_diagnostico" rows="2"></textarea>
             </div>
             <div class="col-md-12">
-                <label class="form-label">Tratamiento / Notas</label>
-                <textarea class="form-control" name="tratamiento" id="edit_tratamiento" rows="3"></textarea>
+                <label class="form-label">Tratamiento / Plan</label>
+                <textarea class="form-control" name="tratamiento" id="edit_tratamiento" rows="2"></textarea>
+            </div>
+            <div class="col-md-12">
+                <label class="form-label">Medicamentos Recetados</label>
+                <textarea class="form-control" name="medicamentos" id="edit_medicamentos" rows="2" placeholder="Listado de medicación..."></textarea>
+            </div>
+            <div class="col-md-12">
+                <label class="form-label">Notas Adicionales</label>
+                <textarea class="form-control" name="notas" id="edit_notas" rows="1"></textarea>
             </div>
         </div>
       </div>
@@ -290,8 +348,23 @@ function editExpediente(e) {
     document.getElementById('edit_sintomas').value = e.sintomas;
     document.getElementById('edit_diagnostico').value = e.diagnostico;
     document.getElementById('edit_tratamiento').value = e.tratamiento;
+    document.getElementById('edit_ps').value = e.presion_sistolica ?? '';
+    document.getElementById('edit_pd').value = e.presion_diastolica ?? '';
+    document.getElementById('edit_temp').value = e.temperatura ?? '';
+    document.getElementById('edit_fc').value = e.frecuencia_cardiaca ?? '';
+    document.getElementById('edit_fr').value = e.frecuencia_resp ?? '';
+    document.getElementById('edit_peso').value = e.peso_kg ?? '';
+    document.getElementById('edit_talla').value = e.talla_cm ?? '';
+    document.getElementById('edit_medicamentos').value = e.medicamentos ?? '';
+    document.getElementById('edit_notas').value = e.notas ?? '';
     new bootstrap.Modal(document.getElementById('modalEditExpediente')).show();
 }
+
+document.getElementById('modalAddExpediente').addEventListener('show.bs.modal', function () {
+    let d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    document.getElementById('add_inicio_captura').value = d.toISOString().slice(0, 19).replace('T', ' ');
+});
 
 <?php if (isset($_GET['cita_id'])): ?>
 // Si venimos de la agenda de citas, abrir el modal de crear expediente de inmediato

@@ -156,7 +156,27 @@ try {
         // Cerrar Cita Activa
         $pdo->prepare("UPDATE citas SET estado = 'completada', expediente_id = ? WHERE id = ?")->execute([$nuevo_exp_id, $cita_activa]);
 
-        echo json_encode(['status' => 'success', 'mensaje' => 'Expediente añadido y Cita completada.']);
+        // Registrar en logs_captura el performance de la IA (Metodo asistente_ia)
+        $inicio_ia = date('Y-m-d H:i:s.v', strtotime('-30 seconds')); // Valor por si la consulta falla
+        $stmt_inicio = $pdo->prepare("SELECT created_at FROM mensajes_aura WHERE conversacion_id = ? ORDER BY id ASC LIMIT 1");
+        $stmt_inicio->execute([$conversacion_id]);
+        if ($res_inicio = $stmt_inicio->fetchColumn()) {
+            $inicio_ia = $res_inicio;
+        }
+
+        $campos_capturados = 0;
+        foreach (['motivo_consulta', 'sintomas', 'diagnostico', 'tratamiento', 'medicamentos', 'notas', 'presion_sistolica', 'presion_diastolica', 'temperatura', 'frecuencia_cardiaca', 'frecuencia_resp', 'peso_kg', 'talla_cm'] as $f) {
+            if (!empty($datos[$f]))
+                $campos_capturados++;
+        }
+
+        try {
+            $pdo->prepare("INSERT INTO logs_captura (medico_id, expediente_id, metodo, inicio, fin, errores_validacion, campos_capturados) VALUES (?, ?, 'asistente_ia', ?, NOW(3), 0, ?)")->execute([$medico_id, $nuevo_exp_id, $inicio_ia, $campos_capturados]);
+        }
+        catch (Exception $e) {
+        }
+
+        echo json_encode(['status' => 'success', 'mensaje' => 'Expediente añadido y Cita completada con Bitácora IA guardada.']);
     }
     else {
         echo json_encode(['status' => 'error', 'mensaje' => 'Operación desconocida']);
